@@ -1,0 +1,131 @@
+// Prisma Schema - UPT Bahasa Universitas Dharma Andalas
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum StatusPendaftaran {
+  MENUNGGU
+  DIKONFIRMASI
+  DITOLAK
+  SELESAI
+}
+
+enum StatusTerjemahan {
+  MENUNGGU
+  DIPROSES
+  SELESAI
+  DITOLAK
+}
+
+model User {
+  id                    String                 @id @default(cuid())
+  nama                  String
+  email                 String                 @unique
+  password              String
+  noHp                  String?
+  role                  Role                   @default(USER)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  pendaftaranToefl      PendaftaranToefl[]
+  pendaftaranPelatihan  PendaftaranPelatihan[]
+  pengajuanTerjemahan   PengajuanTerjemahan[]
+
+  @@map("users")
+}
+
+model JadwalToefl {
+  id            String             @id @default(cuid())
+  tanggal       DateTime
+  waktu         String
+  lokasi        String
+  kuota         Int
+  kuotaTerisi   Int                @default(0)
+  biaya         Decimal            @db.Decimal(10, 2)
+  keterangan    String?
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  pendaftaran   PendaftaranToefl[]
+
+  @@map("jadwal_toefl")
+}
+
+model PendaftaranToefl {
+  id          String            @id @default(cuid())
+  userId      String
+  jadwalId    String
+  status      StatusPendaftaran @default(MENUNGGU)
+  nilaiToefl  Int?
+  catatan     String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id])
+  jadwal      JadwalToefl       @relation(fields: [jadwalId], references: [id])
+
+  @@unique([userId, jadwalId])
+  @@map("pendaftaran_toefl")
+}
+
+model Pelatihan {
+  id            String                 @id @default(cuid())
+  nama          String
+  deskripsi     String?
+  tanggalMulai  DateTime
+  tanggalSelesai DateTime
+  waktu         String
+  lokasi        String
+  kuota         Int
+  kuotaTerisi   Int                    @default(0)
+  biaya         Decimal                @db.Decimal(10, 2)
+  isActive      Boolean                @default(true)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  pendaftaran   PendaftaranPelatihan[]
+
+  @@map("pelatihan")
+}
+
+model PendaftaranPelatihan {
+  id          String            @id @default(cuid())
+  userId      String
+  pelatihanId String
+  status      StatusPendaftaran @default(MENUNGGU)
+  catatan     String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id])
+  pelatihan   Pelatihan         @relation(fields: [pelatihanId], references: [id])
+
+  @@unique([userId, pelatihanId])
+  @@map("pendaftaran_pelatihan")
+}
+
+model PengajuanTerjemahan {
+  id               String           @id @default(cuid())
+  userId           String
+  judulDokumen     String
+  bahasaAsal       String
+  bahasaTujuan     String
+  catatan          String?
+  fileDokumen      String?
+  fileHasil        String?
+  status           StatusTerjemahan @default(MENUNGGU)
+  harga            Decimal?         @db.Decimal(10, 2)
+  estimasiSelesai  DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             User             @relation(fields: [userId], references: [id])
+
+  @@map("pengajuan_terjemahan")
+}
