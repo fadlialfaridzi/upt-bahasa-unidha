@@ -1,65 +1,77 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { dashboardPathFor } from '../../config/roles.js';
+import Icon from '../ui/Icon.jsx';
+
+const NAV_LINKS = [
+  { href: '/', label: 'Beranda', hash: '' },
+  { href: '/#layanan', label: 'Layanan', hash: '#layanan' },
+  { href: '/#alur', label: 'Alur Layanan', hash: '#alur' },
+  { href: '/#validasi', label: 'Validasi Sertifikat', hash: '#validasi' },
+];
+
+export function Brand() {
+  return (
+    <Link to="/" className="brand" aria-label="UPT Bahasa Unidha - Beranda">
+      <span className="logo-mark">u.</span>
+      <span className="brand-text">
+        <strong>UPT Bahasa Unidha</strong>
+        <small>Universitas Dharma Andalas</small>
+      </span>
+    </Link>
+  );
+}
 
 function Navbar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { pathname, hash } = useLocation();
+  const [open, setOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  const isActive = (link) => pathname === '/' && hash === link.hash;
 
   return (
-    <nav style={{
-      background: '#1e3a5f',
-      color: 'white',
-      padding: '0 2rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      height: '64px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-    }}>
-      <Link to="/" style={{ color: 'white', fontWeight: 'bold', fontSize: '1.1rem' }}>
-        UPT Bahasa Unidha
-      </Link>
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-        <Link to="/toefl" style={{ color: 'white', opacity: 0.9 }}>Tes TOEFL</Link>
-        <Link to="/pelatihan" style={{ color: 'white', opacity: 0.9 }}>Pelatihan</Link>
-        <Link to="/terjemahan" style={{ color: 'white', opacity: 0.9 }}>Terjemahan</Link>
-        {user ? (
-          <>
-            <Link to="/dashboard" style={{ color: 'white', opacity: 0.9 }}>Dashboard</Link>
-            <button
-              onClick={handleLogout}
-              style={{
-                background: 'transparent',
-                border: '1px solid white',
-                color: 'white',
-                padding: '0.4rem 1rem',
-                borderRadius: '4px',
-              }}
+    <header className="site-header">
+      <div className="container site-header-inner">
+        <Brand />
+
+        <nav className={`site-nav ${open ? 'open' : ''}`} aria-label="Navigasi utama">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className={isActive(link) ? 'active' : ''}
+              onClick={() => setOpen(false)}
             >
-              Keluar
-            </button>
-          </>
-        ) : (
-          <Link
-            to="/login"
-            style={{
-              background: '#e8b84b',
-              color: '#1e3a5f',
-              padding: '0.4rem 1rem',
-              borderRadius: '4px',
-              fontWeight: 'bold',
-            }}
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="site-actions">
+          {user ? (
+            <Link to={dashboardPathFor(user.role)} className="btn btn-light btn-sm">
+              <Icon name="grid" size={16} />
+              <span className="btn-label">Dashboard</span>
+            </Link>
+          ) : (
+            <Link to="/login" className="btn btn-primary btn-sm">
+              <Icon name="user" size={16} />
+              <span className="btn-label">Masuk</span>
+            </Link>
+          )}
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-label={open ? 'Tutup menu' : 'Buka menu'}
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
           >
-            Masuk
-          </Link>
-        )}
+            <Icon name={open ? 'x' : 'menu'} size={24} />
+          </button>
+        </div>
       </div>
-    </nav>
+    </header>
   );
 }
 

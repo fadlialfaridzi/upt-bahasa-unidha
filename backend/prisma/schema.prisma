@@ -1,4 +1,16 @@
 // Prisma Schema - UPT Bahasa Universitas Dharma Andalas
+// Revisi ERD (evaluasi Pak Husnil):
+//  1. Pengguna punya satu role (FK langsung), audit_log hanya merujuk id_pengguna.
+//     Kolom "pelaku" (dirilis_oleh, id_verifikator, id_penerbit, id_penginput, id_staf,
+//     diperbarui_oleh, riwayat.id_pengguna) dihapus -> pelaku aksi dicatat di audit_log.
+//  2. Pendaftaran dipisah: pendaftaran_toefl & pendaftaran_pelatihan.
+//     Nilai disimpan di baris pendaftaran (1 pendaftaran = 1 nilai akhir),
+//     sertifikat 1:1 dengan pendaftaran (maksimal satu).
+//  3. Cicilan 1:1 pembayaran (pembayaran.id_cicilan UNIQUE).
+//  4. Penerjemahan: pesanan 1:1 job_order; hasil & revisi disimpan di job_order
+//     (versi sederhana). Bahasa/jenis dokumen cukup di tabel tarif.
+//  5. id_pengajar hanya di pertemuan_kelas; sesi presensi dilebur ke pertemuan_kelas
+//     (1 pertemuan = 1 sesi presensi); materi hanya melekat ke kelas.
 
 generator client {
   provider = "prisma-client-js"
@@ -9,123 +21,582 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
+// ============================================================================
+// ENUM (pengganti CHECK constraint status)
+// ============================================================================
+
+enum tipe_pengguna {
+  mahasiswa
+  umum
+  internal
 }
 
-enum StatusPendaftaran {
-  MENUNGGU
-  DIKONFIRMASI
-  DITOLAK
-  SELESAI
+enum jenis_kelamin {
+  L
+  P
 }
 
-enum StatusTerjemahan {
-  MENUNGGU
-  DIPROSES
-  SELESAI
-  DITOLAK
+enum status_sesi_toefl {
+  terbuka
+  menunggu_override
+  ujian_dibuka
+  dijadwalkan
+  selesai
+  dibatalkan
 }
 
-model User {
-  id                    String                 @id @default(cuid())
-  nama                  String
-  email                 String                 @unique
-  password              String
-  noHp                  String?
-  role                  Role                   @default(USER)
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  pendaftaranToefl      PendaftaranToefl[]
-  pendaftaranPelatihan  PendaftaranPelatihan[]
-  pengajuanTerjemahan   PengajuanTerjemahan[]
-
-  @@map("users")
+enum jenis_pelatihan {
+  toefl_preparation
+  toefl
+  ielts
+  conversation
 }
 
-model JadwalToefl {
-  id            String             @id @default(cuid())
-  tanggal       DateTime
-  waktu         String
-  lokasi        String
-  kuota         Int
-  kuotaTerisi   Int                @default(0)
-  biaya         Decimal            @db.Decimal(10, 2)
-  keterangan    String?
-  isActive      Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  pendaftaran   PendaftaranToefl[]
-
-  @@map("jadwal_toefl")
+enum tipe_kelas {
+  kelas
+  privat
 }
 
-model PendaftaranToefl {
-  id          String            @id @default(cuid())
-  userId      String
-  jadwalId    String
-  status      StatusPendaftaran @default(MENUNGGU)
-  nilaiToefl  Int?
-  catatan     String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  user        User              @relation(fields: [userId], references: [id])
-  jadwal      JadwalToefl       @relation(fields: [jadwalId], references: [id])
-
-  @@unique([userId, jadwalId])
-  @@map("pendaftaran_toefl")
+enum status_kelas {
+  dibuka
+  berjalan
+  selesai
+  dibatalkan
 }
 
-model Pelatihan {
-  id            String                 @id @default(cuid())
-  nama          String
-  deskripsi     String?
-  tanggalMulai  DateTime
-  tanggalSelesai DateTime
-  waktu         String
-  lokasi        String
-  kuota         Int
-  kuotaTerisi   Int                    @default(0)
-  biaya         Decimal                @db.Decimal(10, 2)
-  isActive      Boolean                @default(true)
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  pendaftaran   PendaftaranPelatihan[]
-
-  @@map("pelatihan")
+enum status_pendaftaran {
+  menunggu_pembayaran
+  terverifikasi
+  dibatalkan
 }
 
-model PendaftaranPelatihan {
-  id          String            @id @default(cuid())
-  userId      String
-  pelatihanId String
-  status      StatusPendaftaran @default(MENUNGGU)
-  catatan     String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  user        User              @relation(fields: [userId], references: [id])
-  pelatihan   Pelatihan         @relation(fields: [pelatihanId], references: [id])
-
-  @@unique([userId, pelatihanId])
-  @@map("pendaftaran_pelatihan")
+enum status_kelulusan {
+  belum_dinilai
+  lulus
+  tidak_lulus
 }
 
-model PengajuanTerjemahan {
-  id               String           @id @default(cuid())
-  userId           String
-  judulDokumen     String
-  bahasaAsal       String
-  bahasaTujuan     String
-  catatan          String?
-  fileDokumen      String?
-  fileHasil        String?
-  status           StatusTerjemahan @default(MENUNGGU)
-  harga            Decimal?         @db.Decimal(10, 2)
-  estimasiSelesai  DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  user             User             @relation(fields: [userId], references: [id])
+enum status_persetujuan {
+  diajukan
+  disetujui
+  ditolak
+}
 
-  @@map("pengajuan_terjemahan")
+enum status_presensi_pertemuan {
+  dibuka
+  ditutup
+}
+
+enum status_kehadiran {
+  hadir
+  izin
+  alpha
+}
+
+enum status_pesanan {
+  menunggu_pengecekan
+  menunggu_pembayaran
+  menunggu_verifikasi
+  terverifikasi
+  dialokasikan
+  dikerjakan
+  selesai
+  revisi
+  dibatalkan
+}
+
+enum status_job {
+  ditugaskan
+  diterima
+  dikerjakan
+  selesai
+}
+
+enum jenis_layanan {
+  toefl
+  pelatihan
+  penerjemahan
+}
+
+enum status_tagihan {
+  menunggu_pembayaran
+  menunggu_verifikasi
+  menunggu_persetujuan_angsuran
+  sebagian
+  lunas
+  kedaluwarsa
+  dibatalkan
+}
+
+enum status_cicilan {
+  belum_terbit
+  menunggu_pembayaran
+  menunggu_verifikasi
+  lunas
+}
+
+enum status_pembayaran {
+  menunggu
+  terverifikasi
+  ditolak
+}
+
+enum status_sertifikat {
+  aktif
+  dicabut
+}
+
+// ============================================================================
+// PENGGUNA, ROLE, SISTEM
+// ============================================================================
+
+model role {
+  id_role    Int        @id @default(autoincrement())
+  nama_role  String     @unique @db.VarChar(30)
+  keterangan String?    @db.VarChar(150)
+  pengguna   pengguna[]
+}
+
+model pengguna {
+  id_pengguna   Int            @id @default(autoincrement())
+  id_role       Int
+  nama_lengkap  String         @db.VarChar(100)
+  email         String         @unique @db.VarChar(100)
+  username      String?        @unique @db.VarChar(50)
+  password_hash String         @db.VarChar(100)
+  no_hp         String?        @db.VarChar(20)
+  nim           String?        @db.VarChar(20)
+  program_studi String?        @db.VarChar(100)
+  tempat_lahir  String?        @db.VarChar(50)
+  tanggal_lahir DateTime?      @db.Date
+  jenis_kelamin jenis_kelamin?
+  tipe_pengguna tipe_pengguna  @default(mahasiswa)
+  status_aktif  Boolean        @default(true)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @default(now()) @updatedAt
+
+  role                  role                    @relation(fields: [id_role], references: [id_role])
+  audit_log             audit_log[]
+  notifikasi            notifikasi[]
+  pendaftaran_toefl     pendaftaran_toefl[]
+  pendaftaran_pelatihan pendaftaran_pelatihan[]
+  pesanan_terjemahan    pesanan_terjemahan[]
+  job_order             job_order[]
+  pertemuan_kelas       pertemuan_kelas[]
+  kuesioner_pengajar    kuesioner_pengajar[]
+  override_diajukan     override_kuota[]        @relation("override_pengaju")
+  override_diputuskan   override_kuota[]        @relation("override_penyetuju")
+
+  @@index([id_role])
+}
+
+model parameter_sistem {
+  kunci      String  @id @db.VarChar(50)
+  nilai      String  @db.VarChar(100)
+  keterangan String? @db.VarChar(150)
+}
+
+// audit_log hanya merujuk pengguna pelaku (tanpa id_role_aktif).
+// Seluruh "siapa melakukan apa" (verifikasi, rilis jadwal, terbit sertifikat, dst.) dicatat di sini.
+model audit_log {
+  id_log      Int      @id @default(autoincrement())
+  id_pengguna Int
+  aksi        String   @db.VarChar(30)
+  entitas     String   @db.VarChar(50)
+  id_entitas  String?  @db.VarChar(50)
+  detail      String?
+  alamat_ip   String?  @db.VarChar(45)
+  waktu       DateTime @default(now())
+
+  pengguna pengguna @relation(fields: [id_pengguna], references: [id_pengguna])
+
+  @@index([waktu])
+  @@index([id_pengguna, waktu])
+  @@index([entitas, id_entitas])
+}
+
+model notifikasi {
+  id_notifikasi Int      @id @default(autoincrement())
+  id_pengguna   Int
+  jenis         String   @db.VarChar(30)
+  judul         String   @db.VarChar(100)
+  pesan         String   @db.VarChar(255)
+  sudah_dibaca  Boolean  @default(false)
+  waktu         DateTime @default(now())
+
+  pengguna pengguna @relation(fields: [id_pengguna], references: [id_pengguna])
+
+  @@index([id_pengguna, sudah_dibaca])
+}
+
+model dokumen_sop {
+  id_dokumen_sop  Int      @id @default(autoincrement())
+  judul           String   @db.VarChar(150)
+  konten          String
+  aktif           Boolean  @default(true)
+  diperbarui_pada DateTime @default(now()) @updatedAt
+}
+
+// ============================================================================
+// LAYANAN TES TOEFL
+// ============================================================================
+
+model sesi_toefl {
+  id_sesi           Int               @id @default(autoincrement())
+  nama_sesi         String            @db.VarChar(100)
+  batas_pendaftaran DateTime?
+  tanggal           DateTime?         @db.Date
+  jam_mulai         DateTime?         @db.Time(0)
+  jam_selesai       DateTime?         @db.Time(0)
+  ruang             String?           @db.VarChar(50)
+  kuota_min         Int               @default(8) @db.SmallInt
+  kuota_maks        Int               @default(10) @db.SmallInt
+  tarif             Decimal           @db.Decimal(12, 2)
+  status            status_sesi_toefl @default(terbuka)
+  tanggal_rilis     DateTime?
+
+  pendaftaran_toefl pendaftaran_toefl[]
+  override_kuota    override_kuota[]
+}
+
+// Satu pendaftaran = satu nilai akhir (skor_toefl) dan maksimal satu sertifikat.
+// Mengulang tes = pendaftaran baru.
+model pendaftaran_toefl {
+  id_pendaftaran   Int                @id @default(autoincrement())
+  id_pengguna      Int
+  id_sesi          Int
+  id_tagihan       Int?               @unique
+  id_sertifikat    Int?               @unique
+  tanggal_daftar   DateTime           @default(now())
+  status           status_pendaftaran @default(menunggu_pembayaran)
+  skor_toefl       Decimal?           @db.Decimal(6, 2)
+  status_kelulusan status_kelulusan   @default(belum_dinilai)
+
+  pengguna   pengguna    @relation(fields: [id_pengguna], references: [id_pengguna])
+  sesi_toefl sesi_toefl  @relation(fields: [id_sesi], references: [id_sesi])
+  tagihan    tagihan?    @relation(fields: [id_tagihan], references: [id_tagihan])
+  sertifikat sertifikat? @relation(fields: [id_sertifikat], references: [id_sertifikat])
+
+  @@index([id_pengguna])
+  @@index([id_sesi, status])
+}
+
+model override_kuota {
+  id_override     Int                @id @default(autoincrement())
+  id_sesi         Int
+  id_pengaju      Int
+  id_penyetuju    Int? // dipertahankan: aturan "empat mata" (penyetuju != pengaju)
+  alasan          String
+  status          status_persetujuan @default(diajukan)
+  catatan_putusan String?
+  tanggal_ajuan   DateTime           @default(now())
+  tanggal_putusan DateTime?
+
+  sesi_toefl sesi_toefl @relation(fields: [id_sesi], references: [id_sesi])
+  pengaju    pengguna   @relation("override_pengaju", fields: [id_pengaju], references: [id_pengguna])
+  penyetuju  pengguna?  @relation("override_penyetuju", fields: [id_penyetuju], references: [id_pengguna])
+
+  @@index([id_sesi])
+}
+
+// ============================================================================
+// LAYANAN PELATIHAN
+// ============================================================================
+
+// Tanpa id_pengajar: pengajar ditentukan per pertemuan.
+model kelas_pelatihan {
+  id_kelas          Int             @id @default(autoincrement())
+  nama_kelas        String          @db.VarChar(100)
+  jenis_pelatihan   jenis_pelatihan
+  tipe_kelas        tipe_kelas      @default(kelas)
+  kuota_maks        Int             @default(12) @db.SmallInt
+  jumlah_pertemuan  Int             @default(20) @db.SmallInt
+  tanggal_mulai     DateTime?       @db.Date
+  tarif             Decimal         @db.Decimal(12, 2)
+  kuesioner_mulai   DateTime?       @db.Date
+  kuesioner_selesai DateTime?       @db.Date
+  status            status_kelas    @default(dibuka)
+
+  pendaftaran_pelatihan pendaftaran_pelatihan[]
+  pertemuan_kelas       pertemuan_kelas[]
+  materi                materi[]
+}
+
+// Satu pendaftaran = satu nilai akhir (nilai_akhir/post-test) dan maksimal satu sertifikat.
+model pendaftaran_pelatihan {
+  id_pendaftaran   Int                @id @default(autoincrement())
+  id_pengguna      Int
+  id_kelas         Int
+  id_tagihan       Int?               @unique
+  id_sertifikat    Int?               @unique
+  tanggal_daftar   DateTime           @default(now())
+  status           status_pendaftaran @default(menunggu_pembayaran)
+  nilai_pretest    Decimal?           @db.Decimal(5, 2)
+  nilai_akhir      Decimal?           @db.Decimal(5, 2)
+  status_kelulusan status_kelulusan   @default(belum_dinilai)
+
+  pengguna           pengguna             @relation(fields: [id_pengguna], references: [id_pengguna])
+  kelas_pelatihan    kelas_pelatihan      @relation(fields: [id_kelas], references: [id_kelas])
+  tagihan            tagihan?             @relation(fields: [id_tagihan], references: [id_tagihan])
+  sertifikat         sertifikat?          @relation(fields: [id_sertifikat], references: [id_sertifikat])
+  presensi           presensi[]
+  kuesioner_pengajar kuesioner_pengajar[]
+
+  @@index([id_pengguna])
+  @@index([id_kelas, status])
+}
+
+// Sesi presensi dilebur ke sini: 1 pertemuan = 1 sesi presensi (1 token QR).
+model pertemuan_kelas {
+  id_pertemuan         Int                        @id @default(autoincrement())
+  id_kelas             Int
+  id_pengajar          Int
+  pertemuan_ke         Int                        @db.SmallInt
+  tanggal              DateTime                   @db.Date
+  jam_mulai            DateTime                   @db.Time(0)
+  jam_selesai          DateTime                   @db.Time(0)
+  ruang                String?                    @db.VarChar(50)
+  topik                String?                    @db.VarChar(150)
+  token_qr             String?                    @unique @db.VarChar(64)
+  status_presensi      status_presensi_pertemuan?
+  waktu_buka_presensi  DateTime?
+  waktu_tutup_presensi DateTime?
+
+  kelas_pelatihan kelas_pelatihan @relation(fields: [id_kelas], references: [id_kelas])
+  pengajar        pengguna        @relation(fields: [id_pengajar], references: [id_pengguna])
+  presensi        presensi[]
+
+  @@unique([id_kelas, pertemuan_ke])
+  @@index([id_pengajar, tanggal])
+  @@index([ruang, tanggal])
+}
+
+model presensi {
+  id_presensi    Int              @id @default(autoincrement())
+  id_pertemuan   Int
+  id_pendaftaran Int
+  waktu_scan     DateTime         @default(now())
+  status         status_kehadiran @default(hadir)
+
+  pertemuan_kelas       pertemuan_kelas       @relation(fields: [id_pertemuan], references: [id_pertemuan])
+  pendaftaran_pelatihan pendaftaran_pelatihan @relation(fields: [id_pendaftaran], references: [id_pendaftaran])
+
+  @@unique([id_pertemuan, id_pendaftaran])
+  @@index([id_pendaftaran])
+}
+
+// Materi hanya melekat ke kelas (tanpa relasi ke pengguna).
+model materi {
+  id_materi      Int      @id @default(autoincrement())
+  id_kelas       Int
+  judul          String   @db.VarChar(150)
+  file_path      String   @db.VarChar(255)
+  tanggal_unggah DateTime @default(now())
+
+  kelas_pelatihan kelas_pelatihan @relation(fields: [id_kelas], references: [id_kelas])
+
+  @@index([id_kelas])
+}
+
+model pertanyaan_kuesioner {
+  id_pertanyaan   Int     @id @default(autoincrement())
+  teks_pertanyaan String  @db.VarChar(255)
+  urutan          Int     @default(1) @db.SmallInt
+  aktif           Boolean @default(true)
+
+  jawaban_kuesioner jawaban_kuesioner[]
+}
+
+model kuesioner_pengajar {
+  id_kuesioner   Int      @id @default(autoincrement())
+  id_pendaftaran Int
+  id_pengajar    Int
+  komentar       String?
+  tanggal_isi    DateTime @default(now())
+
+  pendaftaran_pelatihan pendaftaran_pelatihan @relation(fields: [id_pendaftaran], references: [id_pendaftaran])
+  pengajar              pengguna              @relation(fields: [id_pengajar], references: [id_pengguna])
+  jawaban_kuesioner     jawaban_kuesioner[]
+
+  @@unique([id_pendaftaran, id_pengajar])
+}
+
+model jawaban_kuesioner {
+  id_jawaban    Int @id @default(autoincrement())
+  id_kuesioner  Int
+  id_pertanyaan Int
+  skor          Int @db.SmallInt
+
+  kuesioner_pengajar   kuesioner_pengajar   @relation(fields: [id_kuesioner], references: [id_kuesioner], onDelete: Cascade)
+  pertanyaan_kuesioner pertanyaan_kuesioner @relation(fields: [id_pertanyaan], references: [id_pertanyaan])
+
+  @@unique([id_kuesioner, id_pertanyaan])
+}
+
+// ============================================================================
+// LAYANAN PENERJEMAHAN
+// ============================================================================
+
+// Disederhanakan: satu tarif per kombinasi jenis dokumen + pasangan bahasa.
+model tarif_penerjemahan {
+  id_tarif                  Int     @id @default(autoincrement())
+  jenis_dokumen             String  @db.VarChar(30)
+  bahasa_asal               String  @db.VarChar(30)
+  bahasa_tujuan             String  @db.VarChar(30)
+  tarif_per_halaman         Decimal @db.Decimal(12, 2)
+  estimasi_hari_per_halaman Decimal @default(0.5) @db.Decimal(5, 2)
+  aktif                     Boolean @default(true)
+
+  pesanan_terjemahan pesanan_terjemahan[]
+
+  @@unique([jenis_dokumen, bahasa_asal, bahasa_tujuan])
+}
+
+// Jenis dokumen & bahasa tidak diulang di sini, cukup lewat id_tarif.
+model pesanan_terjemahan {
+  id_pesanan     Int            @id @default(autoincrement())
+  id_pemohon     Int
+  id_tarif       Int
+  id_tagihan     Int?           @unique
+  jumlah_halaman Int?           @db.SmallInt
+  estimasi_biaya Decimal?       @db.Decimal(12, 2)
+  estimasi_hari  Int?           @db.SmallInt
+  file_asli_path String         @db.VarChar(255)
+  status         status_pesanan @default(menunggu_pengecekan)
+  tanggal_ajuan  DateTime       @default(now())
+
+  pemohon                   pengguna                    @relation(fields: [id_pemohon], references: [id_pengguna])
+  tarif_penerjemahan        tarif_penerjemahan          @relation(fields: [id_tarif], references: [id_tarif])
+  tagihan                   tagihan?                    @relation(fields: [id_tagihan], references: [id_tagihan])
+  job_order                 job_order?
+  riwayat_status_terjemahan riwayat_status_terjemahan[]
+
+  @@index([id_pemohon, status])
+}
+
+// Tanpa id_pengguna: pelaku perubahan status dicatat di audit_log.
+model riwayat_status_terjemahan {
+  id_riwayat Int            @id @default(autoincrement())
+  id_pesanan Int
+  status     status_pesanan
+  keterangan String?        @db.VarChar(150)
+  waktu      DateTime       @default(now())
+
+  pesanan_terjemahan pesanan_terjemahan @relation(fields: [id_pesanan], references: [id_pesanan])
+
+  @@index([id_pesanan, waktu])
+}
+
+// 1 pesanan = 1 job_order (1 penerjemah). Hasil & revisi disimpan langsung di sini:
+// unggah ulang hasil -> update file_hasil_path dan naikkan versi_hasil.
+model job_order {
+  id_job               Int        @id @default(autoincrement())
+  id_pesanan           Int        @unique
+  id_penerjemah        Int
+  tanggal_alokasi      DateTime   @default(now())
+  tenggat              DateTime   @db.Date
+  status               status_job @default(ditugaskan)
+  file_hasil_path      String?    @db.VarChar(255)
+  versi_hasil          Int        @default(0) @db.SmallInt
+  catatan_revisi       String?
+  tanggal_unggah_hasil DateTime?
+
+  pesanan_terjemahan pesanan_terjemahan @relation(fields: [id_pesanan], references: [id_pesanan])
+  penerjemah         pengguna           @relation(fields: [id_penerjemah], references: [id_pengguna])
+
+  @@index([id_penerjemah, status])
+}
+
+// ============================================================================
+// TAGIHAN & PEMBAYARAN
+// ============================================================================
+
+// Tagihan dirujuk oleh sumbernya (pendaftaran_toefl / pendaftaran_pelatihan / pesanan_terjemahan)
+// lewat kolom id_tagihan UNIQUE, sehingga tidak ada kolom FK yang selalu kosong di sini.
+model tagihan {
+  id_tagihan     Int            @id @default(autoincrement())
+  kode_tagihan   String         @unique @db.VarChar(30)
+  jenis_layanan  jenis_layanan
+  total_tagihan  Decimal        @db.Decimal(12, 2)
+  status         status_tagihan @default(menunggu_pembayaran)
+  tanggal_terbit DateTime       @default(now())
+  batas_bayar    DateTime?
+
+  pendaftaran_toefl     pendaftaran_toefl?
+  pendaftaran_pelatihan pendaftaran_pelatihan?
+  pesanan_terjemahan    pesanan_terjemahan?
+  skema_angsuran        skema_angsuran[]
+  pembayaran            pembayaran[]
+
+  @@index([status])
+}
+
+// Hanya untuk tagihan pelatihan (divalidasi di aplikasi).
+model skema_angsuran {
+  id_angsuran     Int                @id @default(autoincrement())
+  id_tagihan      Int
+  jumlah_cicilan  Int                @db.SmallInt
+  alasan          String?
+  status          status_persetujuan @default(diajukan)
+  catatan_putusan String?
+  tanggal_ajuan   DateTime           @default(now())
+  tanggal_putusan DateTime?
+
+  tagihan tagihan   @relation(fields: [id_tagihan], references: [id_tagihan])
+  cicilan cicilan[]
+
+  @@index([id_tagihan])
+}
+
+model cicilan {
+  id_cicilan          Int            @id @default(autoincrement())
+  id_angsuran         Int
+  cicilan_ke          Int            @db.SmallInt
+  nominal             Decimal        @db.Decimal(12, 2)
+  jatuh_tempo         DateTime       @db.Date
+  kode_tagihan_termin String?        @unique @db.VarChar(30)
+  status              status_cicilan @default(belum_terbit)
+
+  skema_angsuran skema_angsuran @relation(fields: [id_angsuran], references: [id_angsuran], onDelete: Cascade)
+  pembayaran     pembayaran?
+
+  @@unique([id_angsuran, cicilan_ke])
+}
+
+// Cicilan 1:1 pembayaran (id_cicilan UNIQUE). Bukti ditolak -> baris yang sama diperbarui.
+model pembayaran {
+  id_pembayaran      Int               @id @default(autoincrement())
+  id_tagihan         Int
+  id_cicilan         Int?              @unique
+  nominal            Decimal           @db.Decimal(12, 2)
+  bukti_path         String            @db.VarChar(255)
+  tanggal_unggah     DateTime          @default(now())
+  status             status_pembayaran @default(menunggu)
+  tanggal_verifikasi DateTime?
+  catatan            String?
+
+  tagihan tagihan  @relation(fields: [id_tagihan], references: [id_tagihan])
+  cicilan cicilan? @relation(fields: [id_cicilan], references: [id_cicilan])
+
+  @@index([id_tagihan])
+  @@index([status, tanggal_verifikasi])
+}
+
+// ============================================================================
+// SERTIFIKAT
+// ============================================================================
+
+// Dirujuk 1:1 oleh pendaftaran_toefl / pendaftaran_pelatihan (id_sertifikat UNIQUE).
+model sertifikat {
+  id_sertifikat   Int               @id @default(autoincrement())
+  no_sertifikat   String            @unique @db.VarChar(40)
+  kode_verifikasi String            @unique @db.Char(64)
+  hasil_ringkas   String            @db.VarChar(100)
+  file_path       String            @db.VarChar(255)
+  tanggal_terbit  DateTime          @default(now())
+  berlaku_sampai  DateTime?         @db.Date
+  status          status_sertifikat @default(aktif)
+
+  pendaftaran_toefl     pendaftaran_toefl?
+  pendaftaran_pelatihan pendaftaran_pelatihan?
 }

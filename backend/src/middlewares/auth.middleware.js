@@ -16,8 +16,11 @@ export const authenticate = (req, res, next) => {
   }
 };
 
+// Role pengelola (lihat tabel role): staf_upt, kepala_upt, super_admin
+export const ADMIN_ROLES = ['staf_upt', 'kepala_upt', 'super_admin'];
+
 export const authorizeAdmin = (req, res, next) => {
-  if (req.user.role !== 'ADMIN') {
+  if (!ADMIN_ROLES.includes(req.user.role)) {
     return res.status(403).json({ message: 'Akses ditolak, hanya untuk admin' });
   }
   next();
