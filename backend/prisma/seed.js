@@ -3,12 +3,11 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+// Role akun hanya 4 (lihat migrasi 20261113140000_sederhanakan_role). ID lama dipertahankan.
 const ROLES = [
   { id_role: 1, nama_role: 'peserta', keterangan: 'Mahasiswa atau peserta umum' },
-  { id_role: 2, nama_role: 'penerjemah', keterangan: 'Eksekutor layanan penerjemahan' },
-  { id_role: 3, nama_role: 'pengajar', keterangan: 'Instruktur kelas pelatihan' },
-  { id_role: 4, nama_role: 'staf_upt', keterangan: 'Operational Admin: pembayaran, jadwal, job order, sertifikat' },
-  { id_role: 5, nama_role: 'kepala_upt', keterangan: 'Pimpinan: dashboard, audit log, dan persetujuan override' },
+  { id_role: 3, nama_role: 'pengajar', keterangan: 'Dosen: mengajar kelas pelatihan' },
+  { id_role: 4, nama_role: 'staf_upt', keterangan: 'Admin UPT: kelola layanan, jadwal, pembayaran, sertifikat, dan persetujuan' },
   { id_role: 6, nama_role: 'super_admin', keterangan: 'Tim IT: kelola akun, hak akses, dan pemeliharaan sistem' },
 ];
 

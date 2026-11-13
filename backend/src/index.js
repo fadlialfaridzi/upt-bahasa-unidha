@@ -7,6 +7,9 @@ import toeflRoutes from './routes/toefl.routes.js';
 import pelatihanRoutes from './routes/pelatihan.routes.js';
 import terjemahanRoutes from './routes/terjemahan.routes.js';
 import adminUserRoutes from './routes/admin.user.routes.js';
+import kelasRoutes from './routes/kelas.routes.js';
+import pengajarRoutes from './routes/pengajar.routes.js';
+import kegiatanRoutes from './routes/kegiatan.routes.js';
 
 dotenv.config();
 
@@ -30,6 +33,9 @@ app.use('/api/toefl', toeflRoutes);
 app.use('/api/pelatihan', pelatihanRoutes);
 app.use('/api/terjemahan', terjemahanRoutes);
 app.use('/api/admin', adminUserRoutes);
+app.use('/api/kelas', kelasRoutes);
+app.use('/api/pengajar', pengajarRoutes);
+app.use('/api/kegiatan-dosen', kegiatanRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

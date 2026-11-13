@@ -23,7 +23,7 @@ const SERVICES = [
     icon: 'book',
     title: 'Kelas Pelatihan',
     desc: 'Ikuti kelas persiapan TOEFL, IELTS, maupun percakapan bersama pengajar UPT Bahasa.',
-    features: ['Kelas reguler atau privat', 'Presensi QR & materi per pertemuan', 'Opsi pembayaran angsuran'],
+    features: ['Kelas reguler atau intensif', 'Presensi QR & materi per pertemuan', 'Opsi pembayaran angsuran'],
   },
   {
     icon: 'languages',

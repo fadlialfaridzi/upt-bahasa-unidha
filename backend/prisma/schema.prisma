@@ -53,8 +53,8 @@ enum jenis_pelatihan {
 }
 
 enum tipe_kelas {
-  kelas
-  privat
+  kelas     // kelas reguler
+  intensif  // kelas intensif (sebelumnya "privat")
 }
 
 enum status_kelas {
@@ -176,7 +176,7 @@ model role {
 model pengguna {
   id_pengguna    Int            @id @default(autoincrement())
   id_role        Int
-  id_role_ekstra Int?           // Role tambahan untuk Switch Role (opsional)
+  id_role_ekstra Int? // Role tambahan untuk Switch Role (opsional)
   nama_lengkap   String         @db.VarChar(100)
   email          String         @unique @db.VarChar(100)
   username       String?        @unique @db.VarChar(50)
@@ -202,6 +202,7 @@ model pengguna {
   job_order             job_order[]
   pertemuan_kelas       pertemuan_kelas[]
   kuesioner_pengajar    kuesioner_pengajar[]
+  kegiatan_dosen        kegiatan_dosen[]
   override_diajukan     override_kuota[]        @relation("override_pengaju")
   override_diputuskan   override_kuota[]        @relation("override_penyetuju")
 
@@ -414,6 +415,25 @@ model materi {
   kelas_pelatihan kelas_pelatihan @relation(fields: [id_kelas], references: [id_kelas])
 
   @@index([id_kelas])
+}
+
+// Jadwal kegiatan dosen (#71): waktu dosen TIDAK bisa mengajar di UPT (mengajar S1, rapat, dll).
+// Satu bentuk untuk kegiatan rutin & sekali: berlaku tiap `hari` dalam rentang tanggal_mulai..tanggal_selesai.
+// Kegiatan sekali -> tanggal_mulai = tanggal_selesai. Di luar kegiatan, dosen dianggap tersedia.
+model kegiatan_dosen {
+  id_kegiatan     Int      @id @default(autoincrement())
+  id_pengajar     Int
+  judul           String   @db.VarChar(100)
+  hari            Int      @db.SmallInt // 0 = Minggu ... 6 = Sabtu
+  jam_mulai       DateTime @db.Time(0)
+  jam_selesai     DateTime @db.Time(0)
+  tanggal_mulai   DateTime @db.Date
+  tanggal_selesai DateTime @db.Date
+  created_at      DateTime @default(now())
+
+  pengajar pengguna @relation(fields: [id_pengajar], references: [id_pengguna], onDelete: Cascade)
+
+  @@index([id_pengajar, hari])
 }
 
 model pertanyaan_kuesioner {

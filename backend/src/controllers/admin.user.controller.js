@@ -22,6 +22,32 @@ async function logAudit(idPengguna, aksi, entitas, idEntitas, detail, ip) {
 }
 
 /**
+ * Validasi role untuk buat/ubah akun.
+ * Role akun hanya 4 (super_admin, staf_upt, pengajar, peserta); Super Admin tidak bisa
+ * ditambahkan/diberikan lewat kelola akun, dan role akun Super Admin yang ada tidak bisa diubah.
+ * @returns pesan error, atau null jika valid
+ */
+async function validasiRole({ idRole, idRoleEkstra, existing = null }) {
+  const roles = await prisma.role.findMany();
+  const byId = new Map(roles.map((r) => [r.id_role, r.nama_role]));
+  const superAdminId = roles.find((r) => r.nama_role === 'super_admin')?.id_role;
+  const roleBaru = idRole ? parseInt(idRole) : existing?.id_role;
+  const ekstraBaru = idRoleEkstra === undefined ? existing?.id_role_ekstra ?? null : idRoleEkstra ? parseInt(idRoleEkstra) : null;
+
+  if (!byId.has(roleBaru)) return 'Role utama tidak valid';
+  if (ekstraBaru !== null && !byId.has(ekstraBaru)) return 'Role tambahan tidak valid';
+
+  if (existing?.id_role === superAdminId) {
+    if (roleBaru !== superAdminId) return 'Role akun Super Admin tidak dapat diubah';
+  } else if (roleBaru === superAdminId) {
+    return 'Akun Super Admin tidak dapat ditambahkan. Pilih Admin UPT, Dosen, atau Mahasiswa.';
+  }
+  if (ekstraBaru === superAdminId) return 'Super Admin tidak dapat dijadikan role tambahan';
+  if (ekstraBaru !== null && ekstraBaru === roleBaru) return 'Role tambahan tidak boleh sama dengan role utama';
+  return null;
+}
+
+/**
  * GET /api/admin/roles
  * Ambil semua master role
  */
@@ -158,6 +184,9 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ message: 'Password minimal 8 karakter' });
     }
 
+    const pesanRole = await validasiRole({ idRole: id_role, idRoleEkstra: id_role_ekstra });
+    if (pesanRole) return res.status(400).json({ message: pesanRole });
+
     // Cek email duplikat
     const existing = await prisma.pengguna.findUnique({ where: { email } });
     if (existing) {
@@ -243,6 +272,9 @@ export const updateUser = async (req, res) => {
     if (!existing) {
       return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
     }
+
+    const pesanRole = await validasiRole({ idRole: id_role, idRoleEkstra: id_role_ekstra, existing });
+    if (pesanRole) return res.status(400).json({ message: pesanRole });
 
     // Cek duplikasi email jika diganti
     if (email && email !== existing.email) {

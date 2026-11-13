@@ -17,7 +17,7 @@ export const authenticate = (req, res, next) => {
 };
 
 // Role pengelola (lihat tabel role): staf_upt, kepala_upt, super_admin
-export const ADMIN_ROLES = ['staf_upt', 'kepala_upt', 'super_admin'];
+export const ADMIN_ROLES = ['staf_upt', 'super_admin'];
 
 export const authorizeAdmin = (req, res, next) => {
   if (!ADMIN_ROLES.includes(req.user.role)) {
