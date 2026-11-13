@@ -11,11 +11,9 @@ const initialsOf = (name = '') =>
 
 const ROLE_BADGE_CLASS = {
   super_admin: 'badge-accent',
-  kepala_upt: 'badge-warning',
   staf_upt: 'badge-muted',
   pengajar: 'badge-muted',
   peserta: 'badge-muted',
-  penerjemah: 'badge-muted',
 };
 
 function SuperAdminUsersPage() {
@@ -51,6 +49,12 @@ function SuperAdminUsersPage() {
     id_role_ekstra: '',
     status_aktif: true,
   });
+
+  // Super Admin tidak bisa ditambahkan/diberikan: pilihan role hanya Admin UPT, Dosen, Mahasiswa.
+  // Saat mengedit akun Super Admin, role-nya ditampilkan tapi dikunci.
+  const rolesDapatDipilih = roles.filter((r) => r.nama_role !== 'super_admin');
+  const editSuperAdmin = modalEdit?.role === 'super_admin';
+  const opsiRoleUtama = editSuperAdmin ? roles.filter((r) => r.nama_role === 'super_admin') : rolesDapatDipilih;
 
   const [resetPasswordVal, setResetPasswordVal] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -115,7 +119,7 @@ function SuperAdminUsersPage() {
       nim: '',
       program_studi: '',
       tipe_pengguna: 'mahasiswa',
-      id_role: roles[0]?.id_role || '',
+      id_role: rolesDapatDipilih[0]?.id_role || '',
       id_role_ekstra: '',
       status_aktif: true,
     });
@@ -482,9 +486,11 @@ function SuperAdminUsersPage() {
                       className="input"
                       value={formData.id_role}
                       onChange={handleFormChange}
+                      disabled={editSuperAdmin}
+                      title={editSuperAdmin ? 'Role akun Super Admin tidak dapat diubah' : undefined}
                       required
                     >
-                      {roles.map((r) => (
+                      {opsiRoleUtama.map((r) => (
                         <option key={r.id_role} value={r.id_role}>
                           {ROLE_LABELS[r.nama_role] || r.nama_role} ({r.keterangan})
                         </option>
@@ -501,7 +507,7 @@ function SuperAdminUsersPage() {
                       onChange={handleFormChange}
                     >
                       <option value="">— Tidak Ada —</option>
-                      {roles
+                      {rolesDapatDipilih
                         .filter((r) => String(r.id_role) !== String(formData.id_role))
                         .map((r) => (
                           <option key={r.id_role} value={r.id_role}>
@@ -637,9 +643,11 @@ function SuperAdminUsersPage() {
                       className="input"
                       value={formData.id_role}
                       onChange={handleFormChange}
+                      disabled={editSuperAdmin}
+                      title={editSuperAdmin ? 'Role akun Super Admin tidak dapat diubah' : undefined}
                       required
                     >
-                      {roles.map((r) => (
+                      {opsiRoleUtama.map((r) => (
                         <option key={r.id_role} value={r.id_role}>
                           {ROLE_LABELS[r.nama_role] || r.nama_role} ({r.keterangan})
                         </option>
@@ -656,7 +664,7 @@ function SuperAdminUsersPage() {
                       onChange={handleFormChange}
                     >
                       <option value="">— Tidak Ada —</option>
-                      {roles
+                      {rolesDapatDipilih
                         .filter((r) => String(r.id_role) !== String(formData.id_role))
                         .map((r) => (
                           <option key={r.id_role} value={r.id_role}>

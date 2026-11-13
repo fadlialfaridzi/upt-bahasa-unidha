@@ -2,13 +2,12 @@
 
 export const ROLE_LABELS = {
   super_admin: 'Super Admin',
-  kepala_upt: 'Kepala UPT',
   staf_upt: 'Admin UPT',
   pengajar: 'Dosen',
-  penerjemah: 'Penerjemah',
   peserta: 'Mahasiswa',
 };
 
+// Item menu dengan `path` sudah punya halaman; yang belum ditampilkan nonaktif ("segera hadir").
 export const DASHBOARDS = {
   superadmin: {
     path: '/dashboard/super-admin',
@@ -25,9 +24,9 @@ export const DASHBOARDS = {
     path: '/dashboard/admin',
     label: 'Admin UPT',
     menu: [
-      { label: 'Ringkasan', icon: 'grid' },
+      { label: 'Ringkasan', icon: 'grid', path: '/dashboard/admin' },
       { label: 'Sesi TOEFL', icon: 'graduation' },
-      { label: 'Kelas pelatihan', icon: 'book' },
+      { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/admin/kelas' },
       { label: 'Penerjemahan', icon: 'languages' },
       { label: 'Tagihan & pembayaran', icon: 'wallet' },
       { label: 'Sertifikat', icon: 'award' },
@@ -38,9 +37,9 @@ export const DASHBOARDS = {
     path: '/dashboard/dosen',
     label: 'Dosen',
     menu: [
-      { label: 'Ringkasan', icon: 'grid' },
+      { label: 'Ringkasan', icon: 'grid', path: '/dashboard/dosen' },
       { label: 'Kelas saya', icon: 'graduation' },
-      { label: 'Jadwal mengajar', icon: 'calendar' },
+      { label: 'Jadwal kegiatan', icon: 'calendar', path: '/dashboard/dosen/jadwal' },
       { label: 'Presensi QR', icon: 'qr' },
       { label: 'Materi', icon: 'book' },
       { label: 'Input nilai', icon: 'clipboard' },
@@ -50,7 +49,7 @@ export const DASHBOARDS = {
     path: '/dashboard/mahasiswa',
     label: 'Mahasiswa',
     menu: [
-      { label: 'Ringkasan', icon: 'grid' },
+      { label: 'Ringkasan', icon: 'grid', path: '/dashboard/mahasiswa' },
       { label: 'Tes TOEFL', icon: 'graduation' },
       { label: 'Kelas pelatihan', icon: 'book' },
       { label: 'Penerjemahan', icon: 'languages' },
@@ -63,7 +62,6 @@ export const DASHBOARDS = {
 
 const ROLE_TO_DASHBOARD = {
   super_admin: 'superadmin',
-  kepala_upt: 'admin',
   staf_upt: 'admin',
   pengajar: 'dosen',
   peserta: 'mahasiswa',
