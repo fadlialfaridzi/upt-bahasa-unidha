@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { DASHBOARDS, ROLE_LABELS, dashboardKeyFor } from '../../config/roles.js';
@@ -17,10 +17,16 @@ const SWITCH_LABEL = {
 function DashboardLayout() {
   const { user, logout, switchRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
 
   const config = DASHBOARDS[dashboardKeyFor(user.role)];
+
+  // Cari menu aktif berdasarkan path saat ini
+  const currentMenuItem = config.menu.find((item) =>
+    item.path && (item.path === config.path ? location.pathname === item.path : location.pathname.startsWith(item.path))
+  );
 
   const handleLogout = () => {
     logout();
@@ -68,16 +74,33 @@ function DashboardLayout() {
 
         <p className="side-label">Menu {config.label}</p>
         <nav className="side-nav">
-          {config.menu.map((item, i) => {
-            const active = i === 0;
+          {config.menu.map((item) => {
+            if (item.path) {
+              const active = item.path === config.path
+                ? location.pathname === item.path
+                : location.pathname.startsWith(item.path);
+
+              return (
+                <Link
+                  key={item.label}
+                  to={item.path}
+                  className={`side-link ${active ? 'active' : ''}`}
+                  onClick={() => setOpen(false)}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <Icon name={item.icon} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            }
+
             return (
               <button
                 key={item.label}
                 type="button"
-                className={`side-link ${active ? 'active' : ''}`}
-                disabled={!active}
-                aria-current={active ? 'page' : undefined}
-                title={active ? undefined : 'Segera hadir'}
+                className="side-link"
+                disabled
+                title="Segera hadir"
               >
                 <Icon name={item.icon} />
                 <span>{item.label}</span>
@@ -117,7 +140,8 @@ function DashboardLayout() {
               <Icon name="menu" />
             </button>
             <p className="crumb">
-              Portal UPT<span>/</span>{config.label}<span>/</span><strong>Ringkasan</strong>
+              Portal UPT<span>/</span>{config.label}<span>/</span>
+              <strong>{currentMenuItem?.label || 'Ringkasan'}</strong>
             </p>
           </div>
 

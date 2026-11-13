@@ -25,3 +25,10 @@ export const authorizeAdmin = (req, res, next) => {
   }
   next();
 };
+
+export const authorizeSuperAdmin = (req, res, next) => {
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({ message: 'Akses ditolak, hanya untuk Super Admin' });
+  }
+  next();
+};

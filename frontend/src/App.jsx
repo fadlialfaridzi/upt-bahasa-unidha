@@ -16,6 +16,7 @@ import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
 import PelatihanPage from './pages/pelatihan/PelatihanPage.jsx';
 import TerjemahanPage from './pages/terjemahan/TerjemahanPage.jsx';
 import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard.jsx';
+import SuperAdminUsersPage from './pages/dashboard/SuperAdminUsersPage.jsx';
 import AdminDashboard from './pages/dashboard/AdminDashboard.jsx';
 import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
@@ -36,6 +37,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardRedirect />} />
             <Route path="super-admin" element={<RoleRoute dashboard="superadmin"><SuperAdminDashboard /></RoleRoute>} />
+            <Route path="super-admin/users" element={<RoleRoute dashboard="superadmin"><SuperAdminUsersPage /></RoleRoute>} />
             <Route path="admin"       element={<RoleRoute dashboard="admin"><AdminDashboard /></RoleRoute>} />
             <Route path="dosen"       element={<RoleRoute dashboard="dosen"><DosenDashboard /></RoleRoute>} />
             <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />

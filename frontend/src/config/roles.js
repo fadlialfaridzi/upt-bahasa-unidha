@@ -14,8 +14,8 @@ export const DASHBOARDS = {
     path: '/dashboard/super-admin',
     label: 'Super Admin',
     menu: [
-      { label: 'Ringkasan', icon: 'grid' },
-      { label: 'Akun & role', icon: 'users' },
+      { label: 'Ringkasan', icon: 'grid', path: '/dashboard/super-admin' },
+      { label: 'Akun & role', icon: 'users', path: '/dashboard/super-admin/users' },
       { label: 'Parameter sistem', icon: 'sliders' },
       { label: 'Audit log', icon: 'history' },
       { label: 'Dokumen SOP', icon: 'file' },
