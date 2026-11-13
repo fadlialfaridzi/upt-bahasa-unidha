@@ -20,32 +20,42 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Copy docker-compose files ke VPS
-        run: |
-          scp -i ~/.ssh/id_ed25519 \
-            docker-compose.prod.yml \
-            ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:~/apps/upt-bahasa-unidha/docker-compose.prod.yml
-
-      - name: Deploy ke VPS
+      - name: Deploy to VPS
+        env:
+          ENV_PRODUCTION: ${{ secrets.ENV_PRODUCTION }}
         run: |
           ssh -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            set -e
-            cd ~/apps/upt-bahasa-unidha
+            set -euo pipefail
 
-            echo ">>> Pull kode terbaru dari GitHub..."
-            git pull origin main
+            REPO_DIR="$HOME/apps/upt-bahasa-unidha"
 
-            echo ">>> Menulis file .env production..."
-            cat > .env << 'EOF'
-          ${{ secrets.ENV_PRODUCTION }}
-          EOF
+            mkdir -p "$HOME/apps"
+            if [ -d "$REPO_DIR/.git" ]; then
+              echo ">>> Repo exists. Updating to latest main..."
+              git -C "$REPO_DIR" fetch origin main
+              git -C "$REPO_DIR" reset --hard origin/main
+              git -C "$REPO_DIR" clean -fd
+            else
+              echo ">>> Repo not found. Cloning repository..."
+              git clone https://github.com/fadlialfaridzi/upt-bahasa-unidha.git "$REPO_DIR"
+              git -C "$REPO_DIR" checkout main
+            fi
+          ENDSSH
+
+          echo ">>> Menulis file .env production..."
+          echo "$ENV_PRODUCTION" | ssh -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "cat > \$HOME/apps/upt-bahasa-unidha/.env"
+
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            set -euo pipefail
+
+            REPO_DIR="$HOME/apps/upt-bahasa-unidha"
 
             echo ">>> Build dan jalankan container..."
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up --build -d
+            docker compose -f "$REPO_DIR/docker-compose.prod.yml" down
+            docker compose -f "$REPO_DIR/docker-compose.prod.yml" up --build -d
 
             echo ">>> Jalankan database migration..."
-            docker compose -f docker-compose.prod.yml exec -T backend npx prisma migrate deploy
+            docker compose -f "$REPO_DIR/docker-compose.prod.yml" exec -T backend npx prisma migrate deploy
 
             echo ">>> Bersihkan image lama yang tidak terpakai..."
             docker image prune -f

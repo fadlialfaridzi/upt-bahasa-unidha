@@ -147,35 +147,53 @@ enum status_sertifikat {
 }
 
 // ============================================================================
+// RESET PASSWORD (OTP)
+// ============================================================================
+
+model otp_reset {
+  id         Int      @id @default(autoincrement())
+  email      String   @db.VarChar(100)
+  kode       String   @db.VarChar(6)
+  expired_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@index([email, used])
+}
+
+// ============================================================================
 // PENGGUNA, ROLE, SISTEM
 // ============================================================================
 
 model role {
-  id_role    Int        @id @default(autoincrement())
-  nama_role  String     @unique @db.VarChar(30)
-  keterangan String?    @db.VarChar(150)
-  pengguna   pengguna[]
+  id_role         Int        @id @default(autoincrement())
+  nama_role       String     @unique @db.VarChar(30)
+  keterangan      String?    @db.VarChar(150)
+  pengguna_utama  pengguna[] @relation("role_utama")
+  pengguna_ekstra pengguna[] @relation("role_ekstra")
 }
 
 model pengguna {
-  id_pengguna   Int            @id @default(autoincrement())
-  id_role       Int
-  nama_lengkap  String         @db.VarChar(100)
-  email         String         @unique @db.VarChar(100)
-  username      String?        @unique @db.VarChar(50)
-  password_hash String         @db.VarChar(100)
-  no_hp         String?        @db.VarChar(20)
-  nim           String?        @db.VarChar(20)
-  program_studi String?        @db.VarChar(100)
-  tempat_lahir  String?        @db.VarChar(50)
-  tanggal_lahir DateTime?      @db.Date
-  jenis_kelamin jenis_kelamin?
-  tipe_pengguna tipe_pengguna  @default(mahasiswa)
-  status_aktif  Boolean        @default(true)
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @default(now()) @updatedAt
+  id_pengguna    Int            @id @default(autoincrement())
+  id_role        Int
+  id_role_ekstra Int?           // Role tambahan untuk Switch Role (opsional)
+  nama_lengkap   String         @db.VarChar(100)
+  email          String         @unique @db.VarChar(100)
+  username       String?        @unique @db.VarChar(50)
+  password_hash  String         @db.VarChar(100)
+  no_hp          String?        @db.VarChar(20)
+  nim            String?        @db.VarChar(20)
+  program_studi  String?        @db.VarChar(100)
+  tempat_lahir   String?        @db.VarChar(50)
+  tanggal_lahir  DateTime?      @db.Date
+  jenis_kelamin  jenis_kelamin?
+  tipe_pengguna  tipe_pengguna  @default(mahasiswa)
+  status_aktif   Boolean        @default(true)
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @default(now()) @updatedAt
 
-  role                  role                    @relation(fields: [id_role], references: [id_role])
+  role                  role                    @relation("role_utama", fields: [id_role], references: [id_role])
+  role_ekstra           role?                   @relation("role_ekstra", fields: [id_role_ekstra], references: [id_role])
   audit_log             audit_log[]
   notifikasi            notifikasi[]
   pendaftaran_toefl     pendaftaran_toefl[]

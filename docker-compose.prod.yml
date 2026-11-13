@@ -29,6 +29,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       FRONTEND_URL: ${FRONTEND_URL}
+      MAILTRAP_API_KEY: ${MAILTRAP_API_KEY}
+      MAILTRAP_INBOX_ID: ${MAILTRAP_INBOX_ID}
     volumes:
       - uploads_data:/app/uploads
     ports:
