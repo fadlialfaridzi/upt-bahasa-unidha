@@ -130,6 +130,12 @@ function LoginPage() {
               </div>
             </div>
 
+            <div style={{ textAlign: 'right', marginTop: '-0.25rem' }}>
+              <Link to="/forgot-password" style={{ fontSize: '0.85rem', color: 'var(--primary, #1e3a5f)' }}>
+                Lupa kata sandi?
+              </Link>
+            </div>
+
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
               {loading ? 'Memproses...' : 'Masuk'}
               {!loading && <Icon name="arrowRight" size={18} />}

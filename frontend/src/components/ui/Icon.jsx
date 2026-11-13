@@ -199,6 +199,25 @@ const PATHS = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  // Switch role icon
+  switch: (
+    <>
+      <path d="M7 16V4m0 0L3 8m4-4 4 4" />
+      <path d="M17 8v12m0 0 4-4m-4 4-4-4" />
+    </>
+  ),
+  // Phone icon
+  phone: (
+    <>
+      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" />
+    </>
+  ),
+  // Hash icon (NIM)
+  hash: (
+    <>
+      <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />
+    </>
+  ),
 };
 
 function Icon({ name, size = 20, strokeWidth = 1.8, className, ...rest }) {

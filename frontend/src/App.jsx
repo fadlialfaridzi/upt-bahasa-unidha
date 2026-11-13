@@ -8,6 +8,9 @@ import RoleRoute, { DashboardRedirect } from './components/common/RoleRoute.jsx'
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
+import VerifyOtpPage from './pages/auth/VerifyOtpPage.jsx';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import ToeflJadwalPage from './pages/toefl/ToeflJadwalPage.jsx';
 import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
 import PelatihanPage from './pages/pelatihan/PelatihanPage.jsx';
@@ -22,17 +25,20 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Halaman login berdiri sendiri (tanpa navbar publik) */}
-        <Route path="/login" element={<LoginPage />} />
+        {/* Halaman auth berdiri sendiri (tanpa navbar publik) */}
+        <Route path="/login"           element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/verify-otp"      element={<VerifyOtpPage />} />
+        <Route path="/reset-password"  element={<ResetPasswordPage />} />
 
         {/* Dashboard per role - butuh login */}
         <Route element={<PrivateRoute />}>
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardRedirect />} />
             <Route path="super-admin" element={<RoleRoute dashboard="superadmin"><SuperAdminDashboard /></RoleRoute>} />
-            <Route path="admin" element={<RoleRoute dashboard="admin"><AdminDashboard /></RoleRoute>} />
-            <Route path="dosen" element={<RoleRoute dashboard="dosen"><DosenDashboard /></RoleRoute>} />
-            <Route path="mahasiswa" element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
+            <Route path="admin"       element={<RoleRoute dashboard="admin"><AdminDashboard /></RoleRoute>} />
+            <Route path="dosen"       element={<RoleRoute dashboard="dosen"><DosenDashboard /></RoleRoute>} />
+            <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
           </Route>
         </Route>
 
@@ -40,7 +46,6 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="register" element={<RegisterPage />} />
-          {/* Halaman lama: belum disesuaikan dengan skema database baru */}
           <Route path="toefl" element={<ToeflJadwalPage />} />
           <Route path="pelatihan" element={<PelatihanPage />} />
           <Route element={<PrivateRoute />}>

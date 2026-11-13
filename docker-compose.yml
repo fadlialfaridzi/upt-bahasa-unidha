@@ -39,6 +39,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-ganti_secret_ini_di_production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       FRONTEND_URL: http://localhost:5173
+      MAILTRAP_API_KEY: ${MAILTRAP_API_KEY:-71e84677b094539e820b0370cb1ff5a9}
+      MAILTRAP_INBOX_ID: ${MAILTRAP_INBOX_ID:-5023099}
     volumes:
       - ./backend:/app
       - /app/node_modules
