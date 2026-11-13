@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes.js';
 import toeflRoutes from './routes/toefl.routes.js';
 import pelatihanRoutes from './routes/pelatihan.routes.js';
 import terjemahanRoutes from './routes/terjemahan.routes.js';
+import adminUserRoutes from './routes/admin.user.routes.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/toefl', toeflRoutes);
 app.use('/api/pelatihan', pelatihanRoutes);
 app.use('/api/terjemahan', terjemahanRoutes);
+app.use('/api/admin', adminUserRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
