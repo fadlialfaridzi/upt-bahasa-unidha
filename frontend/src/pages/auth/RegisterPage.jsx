@@ -140,6 +140,11 @@ function RegisterPage() {
                   <option value="internal">Staf / Dosen Internal</option>
                 </select>
               </div>
+              {form.tipe_pengguna === 'internal' && (
+                <small style={{ color: 'var(--brand-700, #3b6a62)', marginTop: '6px', display: 'block', fontSize: '0.8rem' }}>
+                  ℹ️ Akun internal akan didaftarkan sebagai peran <strong>Dosen / Pengajar</strong>.
+                </small>
+              )}
             </div>
 
             {/* NIM & Prodi — tampil hanya untuk mahasiswa */}
