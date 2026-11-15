@@ -47,16 +47,25 @@ export const register = async (req, res) => {
       return res.status(409).json({ message: 'Email sudah terdaftar' });
     }
 
+    // Tentukan role berdasarkan tipe_pengguna atau role yang dikirim
+    const allowedSelfRegisterRoles = ['peserta', 'pengajar'];
+    let roleTarget = 'peserta';
+    if (req.body.role && allowedSelfRegisterRoles.includes(req.body.role)) {
+      roleTarget = req.body.role;
+    } else if (tipe_pengguna === 'internal') {
+      roleTarget = 'pengajar';
+    }
+
     const user = await prisma.pengguna.create({
       data: {
         nama_lengkap: namaLengkap,
         email,
         password_hash: await bcrypt.hash(password, 10),
         no_hp: no_hp || noHp,
-        nim,
-        program_studi,
-        tipe_pengguna,
-        role: { connect: { nama_role: ROLE_PESERTA } },
+        nim: tipe_pengguna === 'mahasiswa' ? nim : null,
+        program_studi: tipe_pengguna === 'mahasiswa' ? program_studi : null,
+        tipe_pengguna: tipe_pengguna || 'mahasiswa',
+        role: { connect: { nama_role: roleTarget } },
       },
       include: { role: true, role_ekstra: true },
     });
