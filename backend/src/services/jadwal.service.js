@@ -181,7 +181,7 @@ export async function ketersediaanPengajar(db, slots, { abaikanId = [] } = {}) {
       ...p,
       tersedia: jumlah === 0,
       jumlah_bentrok: jumlah,
-      alasan: alasan.slice(0, 3),
+      alasan: alasan.slice(0, 6),
       sudah_isi_jadwal: _count.kegiatan_dosen > 0,
     };
   });

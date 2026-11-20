@@ -60,10 +60,10 @@ function PengajarSelect({ idKelas, waktu, value, onChange, error, autoPilihTungg
   const placeholder = !waktu
     ? 'Isi tanggal & jam dahulu'
     : loading && !list
-      ? 'Memeriksa ketersediaan...'
+      ? 'Memeriksa ketersediaan pengajar...'
       : tersedia.length
-        ? 'Pilih pengajar'
-        : 'Tidak ada pengajar tersedia';
+        ? 'Pilih dosen pengajar'
+        : 'Tidak ada dosen tersedia (semua bentrok)';
 
   return (
     <>
@@ -75,32 +75,70 @@ function PengajarSelect({ idKelas, waktu, value, onChange, error, autoPilihTungg
         aria-busy={loading}
       >
         <option value="">{placeholder}</option>
-        {tersedia.map((p) => (
-          <option key={p.id_pengguna} value={p.id_pengguna}>
-            {p.nama_lengkap}{p.sudah_isi_jadwal ? '' : ' · belum isi jadwal kegiatan'}
-          </option>
-        ))}
+        {tersedia.length > 0 && (
+          <optgroup label="── DOSEN TERSEDIA (BEBAS BENTROK) ──">
+            {tersedia.map((p) => (
+              <option key={p.id_pengguna} value={p.id_pengguna}>
+                ✓ {p.nama_lengkap}{p.sudah_isi_jadwal ? '' : ' · (belum isi jadwal kegiatan)'}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {tidakTersedia.length > 0 && (
+          <optgroup label="── DOSEN BENTROK (DIBLOKIR / TIDAK DAPAT DIPILIH) ──">
+            {tidakTersedia.map((p) => (
+              <option key={p.id_pengguna} value={p.id_pengguna} disabled>
+                ⛔ {p.nama_lengkap} ({p.jumlah_bentrok} tanggal bentrok)
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
 
       {error && <span className="field-error">{error}</span>}
       {gagal && <span className="field-error">Gagal memeriksa ketersediaan pengajar.</span>}
       {loading && list && <span className="field-hint">Memperbarui ketersediaan...</span>}
 
-      {!loading && list && tidakTersedia.length > 0 && (
-        <span className="field-hint">
-          {tersedia.length} tersedia · {tidakTersedia.length} tidak tersedia pada waktu ini.{' '}
-          <button type="button" className="link-btn" onClick={() => setLihatAlasan((v) => !v)}>
-            {lihatAlasan ? 'Sembunyikan' : 'Lihat alasan'}
-          </button>
-        </span>
+      {!loading && list && (
+        <div style={{ marginTop: '6px' }}>
+          {tersedia.length > 0 ? (
+            <span className="field-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span className="badge badge-success" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                {tersedia.length} Dosen Tersedia
+              </span>
+              {tidakTersedia.length > 0 && (
+                <>
+                  <span className="badge badge-danger" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                    {tidakTersedia.length} Bentrok (Diblokir)
+                  </span>
+                  <button type="button" className="link-btn" style={{ fontSize: '0.8rem' }} onClick={() => setLihatAlasan((v) => !v)}>
+                    {lihatAlasan ? 'Tutup rincian' : 'Lihat alasan bentrok'}
+                  </button>
+                </>
+              )}
+            </span>
+          ) : (
+            <span className="field-error" style={{ display: 'block' }}>
+              Semua dosen pengajar bentrok pada jadwal ini ({tidakTersedia.length} dosen bentrok). Silakan pilih pola hari atau sesi jam lainnya.{' '}
+              <button type="button" className="link-btn" style={{ fontSize: '0.8rem' }} onClick={() => setLihatAlasan((v) => !v)}>
+                {lihatAlasan ? 'Tutup rincian' : 'Lihat alasan bentrok'}
+              </button>
+            </span>
+          )}
+        </div>
       )}
+
       {lihatAlasan && tidakTersedia.length > 0 && (
-        <ul className="unavailable-list">
+        <ul className="unavailable-list" style={{ marginTop: '8px' }}>
           {tidakTersedia.map((p) => (
             <li key={p.id_pengguna}>
-              <strong>{p.nama_lengkap}</strong>
-              {p.jumlah_bentrok > 1 && <span> ({p.jumlah_bentrok} tanggal bentrok)</span>}
-              <ul>{p.alasan.map((a) => <li key={a}>{a}</li>)}</ul>
+              <strong style={{ color: '#b91c1c' }}>⛔ {p.nama_lengkap}</strong>
+              {p.jumlah_bentrok > 0 && <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}> ({p.jumlah_bentrok} tanggal bentrok)</span>}
+              <ul>
+                {p.alasan.map((a, idx) => (
+                  <li key={idx}>{a}</li>
+                ))}
+              </ul>
             </li>
           ))}
         </ul>

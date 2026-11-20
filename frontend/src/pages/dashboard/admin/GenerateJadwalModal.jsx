@@ -3,16 +3,30 @@ import { toast } from 'react-toastify';
 import api from '../../../services/api.js';
 import Modal from '../../../components/ui/Modal.jsx';
 import Icon from '../../../components/ui/Icon.jsx';
-import { ATURAN_TIPE_KELAS, HARI, JENIS_BENTROK, formatTanggal, toDateInput, todayInput } from '../../../config/pelatihan.js';
+import {
+  ATURAN_TIPE_KELAS,
+  HARI,
+  JENIS_BENTROK,
+  PRESET_POLA_HARI,
+  PRESET_SESI,
+  formatTanggal,
+  toDateInput,
+  todayInput,
+} from '../../../config/pelatihan.js';
 import PengajarSelect from './PengajarSelect.jsx';
 
-// Dua langkah: (1) atur pola jadwal -> (2) pratinjau dengan tanda bentrok -> simpan baris terpilih.
+// Dua langkah: (1) atur pola jadwal & dosen PJ -> (2) pratinjau conflict checker -> simpan.
 function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
+  // Preset default sesuai aturan UPT Bahasa:
+  // Kelas 1 = Senin, Rabu, Jumat (1, 3, 5); Sesi 1 = 09.00 - 11.00
+  const [presetPola, setPresetPola] = useState('kelas_1'); // 'kelas_1' | 'kelas_2' | 'custom'
+  const [presetSesi, setPresetSesi] = useState('sesi_1'); // 'sesi_1' | 'sesi_2' | 'custom'
+
   const [form, setForm] = useState({
     tanggal_mulai: toDateInput(kelas.tanggal_mulai) || todayInput(),
-    hari: [],
+    hari: [1, 3, 5],
     jam_mulai: '09:00',
-    jam_selesai: '10:40',
+    jam_selesai: '11:00',
     ruang: '',
     id_pengajar: '',
     jumlah: sisa,
@@ -25,7 +39,7 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
     form.tanggal_mulai && form.hari.length && jumlahValid && form.jam_mulai && form.jam_selesai && form.jam_mulai < form.jam_selesai
       ? {
           tanggal_mulai: form.tanggal_mulai,
-          hari: [...form.hari].sort(),
+          hari: [...form.hari].sort((a, b) => a - b),
           jumlah: Number(form.jumlah),
           jam_mulai: form.jam_mulai,
           jam_selesai: form.jam_selesai,
@@ -37,17 +51,52 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
   const [busy, setBusy] = useState(false);
 
   const set = (name) => (e) => {
-    setForm((f) => ({ ...f, [name]: e.target.value }));
+    const val = e.target.value;
+    setForm((f) => ({ ...f, [name]: val }));
     setErrors((er) => ({ ...er, [name]: undefined }));
+
+    if (name === 'jam_mulai' || name === 'jam_selesai') {
+      const jMulai = name === 'jam_mulai' ? val : form.jam_mulai;
+      const jSelesai = name === 'jam_selesai' ? val : form.jam_selesai;
+      if (jMulai === '09:00' && jSelesai === '11:00') setPresetSesi('sesi_1');
+      else if (jMulai === '13:30' && jSelesai === '15:30') setPresetSesi('sesi_2');
+      else setPresetSesi('custom');
+    }
   };
+
+  // Handler preset pola hari
+  const pilihPresetPola = (polaId) => {
+    setPresetPola(polaId);
+    const target = PRESET_POLA_HARI.find((p) => p.id === polaId);
+    if (target) {
+      setForm((f) => ({ ...f, hari: [...target.hari] }));
+      setErrors((er) => ({ ...er, hari: undefined }));
+    }
+  };
+
+  // Handler preset sesi jam
+  const pilihPresetSesi = (sesiId) => {
+    setPresetSesi(sesiId);
+    const target = PRESET_SESI.find((s) => s.id === sesiId);
+    if (target) {
+      setForm((f) => ({ ...f, jam_mulai: target.jam_mulai, jam_selesai: target.jam_selesai }));
+      setErrors((er) => ({ ...er, jam: undefined }));
+    }
+  };
+
   // Reguler: 2–3 hari per minggu; intensif: bebas
   const aturan = ATURAN_TIPE_KELAS[kelas.tipe_kelas] ?? ATURAN_TIPE_KELAS.intensif;
   const maksHari = aturan.maxPertemuanPerMinggu ?? 7;
+
   const toggleHari = (h) => {
     setForm((f) => {
-      if (f.hari.includes(h)) return { ...f, hari: f.hari.filter((x) => x !== h) };
-      if (f.hari.length >= maksHari) return f; // batas reguler tercapai
-      return { ...f, hari: [...f.hari, h] };
+      let baru = f.hari.includes(h) ? f.hari.filter((x) => x !== h) : f.hari.length >= maksHari ? f.hari : [...f.hari, h];
+      baru.sort((a, b) => a - b);
+      const str = baru.join(',');
+      if (str === '1,3,5') setPresetPola('kelas_1');
+      else if (str === '2,4,6') setPresetPola('kelas_2');
+      else setPresetPola('custom');
+      return { ...f, hari: baru };
     });
     setErrors((er) => ({ ...er, hari: undefined }));
   };
@@ -61,7 +110,7 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
         : 'Pilih minimal satu hari';
     }
     if (!form.jam_mulai || !form.jam_selesai || form.jam_mulai >= form.jam_selesai) e.jam = 'Jam mulai harus sebelum jam selesai';
-    if (!form.id_pengajar) e.id_pengajar = 'Pilih pengajar';
+    if (!form.id_pengajar) e.id_pengajar = 'Pilih Dosen Penanggung Jawab (PJ)';
     const n = Number(form.jumlah);
     if (!Number.isInteger(n) || n < 1 || n > sisa) e.jumlah = `1–${sisa}`;
     return e;
@@ -94,6 +143,11 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
   const toggleBaris = (i) => setDipilih((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i].sort((a, b) => a - b)));
 
   const handleSave = async () => {
+    // Mode Strict: tidak boleh ada baris bentrok
+    if (jumlahBentrok > 0 || adaBentrokDipilih) {
+      toast.error('Mode Strict Aktif: Tidak dapat menyimpan jadwal karena terdapat bentrok!');
+      return;
+    }
     setBusy(true);
     try {
       const items = dipilih.map((i) => {
@@ -112,8 +166,8 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
 
   return (
     <Modal
-      title="Buat jadwal otomatis"
-      subtitle={`${kelas.nama_kelas} · sisa ${sisa} pertemuan belum dijadwalkan`}
+      title="Penyusunan Jadwal & Plotting Dosen PJ"
+      subtitle={`${kelas.nama_kelas} · target ${sisa} pertemuan`}
       onClose={onClose}
       busy={busy}
       size="lg"
@@ -123,7 +177,12 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
             <button type="button" className="btn btn-outline" onClick={() => setPreview(null)} disabled={busy}>
               <Icon name="arrowLeft" size={16} /> Ubah pengaturan
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={busy || !dipilih.length || adaBentrokDipilih}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSave}
+              disabled={busy || !dipilih.length || adaBentrokDipilih || jumlahBentrok > 0}
+            >
               {busy ? 'Menyimpan...' : `Simpan ${dipilih.length} pertemuan`}
             </button>
           </>
@@ -131,7 +190,7 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
           <>
             <button type="button" className="btn btn-outline" onClick={onClose} disabled={busy}>Batal</button>
             <button type="submit" form="generate-form" className="btn btn-primary" disabled={busy}>
-              {busy ? 'Memeriksa...' : 'Lihat pratinjau'} {!busy && <Icon name="arrowRight" size={16} />}
+              {busy ? 'Memeriksa ketersediaan...' : 'Lihat Pratinjau Jadwal'} {!busy && <Icon name="arrowRight" size={16} />}
             </button>
           </>
         )
@@ -139,9 +198,31 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
     >
       {!preview ? (
         <form id="generate-form" className="form-grid" onSubmit={handlePreview} noValidate>
+          {/* Preset Pola Hari */}
           <div className="field field-full">
-            <span className="field-label">Hari pertemuan</span>
-            <div className="day-picker" role="group" aria-label="Hari pertemuan">
+            <span className="field-label">Pola Hari Pelatihan</span>
+            <div className="preset-group" role="group" aria-label="Pilihan Pola Hari">
+              {PRESET_POLA_HARI.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`preset-btn ${presetPola === p.id ? 'active' : ''}`}
+                  onClick={() => pilihPresetPola(p.id)}
+                >
+                  <Icon name="calendar" size={15} /> {p.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`preset-btn ${presetPola === 'custom' ? 'active' : ''}`}
+                onClick={() => setPresetPola('custom')}
+              >
+                Kustom (Pilih Hari Manual)
+              </button>
+            </div>
+
+            {/* Day chip picker */}
+            <div className="day-picker" role="group" aria-label="Hari pertemuan" style={{ marginTop: '8px' }}>
               {HARI.map((h) => {
                 const aktif = form.hari.includes(h.value);
                 return (
@@ -161,6 +242,30 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
             {errors.hari ? <span className="field-error">{errors.hari}</span> : <span className="field-hint">{aturan.keterangan}</span>}
           </div>
 
+          {/* Preset Sesi Jam */}
+          <div className="field field-full">
+            <span className="field-label">Pilihan Sesi Pelatihan</span>
+            <div className="preset-group" role="group" aria-label="Pilihan Sesi">
+              {PRESET_SESI.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`preset-btn ${presetSesi === s.id ? 'active' : ''}`}
+                  onClick={() => pilihPresetSesi(s.id)}
+                >
+                  <Icon name="clock" size={15} /> {s.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`preset-btn ${presetSesi === 'custom' ? 'active' : ''}`}
+                onClick={() => setPresetSesi('custom')}
+              >
+                Kustom (Jam Manual)
+              </button>
+            </div>
+          </div>
+
           <div className="field">
             <span className="field-label">Mulai dari tanggal</span>
             <input className="input input-plain" type="date" value={form.tanggal_mulai} onChange={set('tanggal_mulai')} />
@@ -176,8 +281,14 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
             {errors.jam && <span className="field-error">{errors.jam}</span>}
           </div>
 
-          <div className="field field-span-2">
-            <span className="field-label">Pengajar (tersedia di semua tanggal)</span>
+          {/* Dosen Penanggung Jawab (PJ) */}
+          <div className="field field-full" style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid var(--line)' }}>
+            <span className="field-label" style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--brand-800)' }}>
+              Dosen Penanggung Jawab (PJ) Kelas
+            </span>
+            <p className="field-hint" style={{ marginTop: '2px', marginBottom: '8px' }}>
+              Dosen terpilih otomatis ditugaskan ke seluruh {form.jumlah || sisa} pertemuan kelas ini. Conflict checker otomatis memblokir (strict) dosen yang memiliki jadwal bentrok.
+            </p>
             <PengajarSelect
               idKelas={kelas.id_kelas}
               waktu={waktuPola}
@@ -191,16 +302,16 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
               autoPilihTunggal
             />
           </div>
+
           <div className="field">
             <span className="field-label">Jumlah pertemuan</span>
             <input className="input input-plain" type="number" min="1" max={sisa} value={form.jumlah} onChange={set('jumlah')} />
-            {errors.jumlah ? <span className="field-error">{errors.jumlah}</span> : <span className="field-hint">Maksimal {sisa}</span>}
+            {errors.jumlah ? <span className="field-error">{errors.jumlah}</span> : <span className="field-hint">Maksimal {sisa} pertemuan</span>}
           </div>
 
-          <div className="field field-full">
-            <span className="field-label">Ruang</span>
-            <input className="input input-plain" value={form.ruang} onChange={set('ruang')} placeholder="Ruang Bahasa 1 (opsional)" maxLength={50} />
-            <span className="field-hint">Pengajar per pertemuan masih bisa diganti setelah jadwal dibuat.</span>
+          <div className="field">
+            <span className="field-label">Ruang kelas</span>
+            <input className="input input-plain" value={form.ruang} onChange={set('ruang')} placeholder="Contoh: Lab Bahasa 1 (opsional)" maxLength={50} />
           </div>
         </form>
       ) : (
@@ -208,11 +319,20 @@ function GenerateJadwalModal({ kelas, sisa, onClose, onSaved }) {
           <div className={`alert ${jumlahBentrok ? 'alert-danger' : 'alert-success'}`} role="status">
             <Icon name={jumlahBentrok ? 'alert' : 'checkCircle'} size={18} />
             <div>
-              {jumlahBentrok
-                ? <><strong>{jumlahBentrok} jadwal bentrok</strong> dan tidak dipilih. Ubah pengaturan atau simpan sisanya.</>
-                : <><strong>Tidak ada bentrok.</strong> {preview.length} pertemuan siap disimpan.</>}
-              <p className="alert-meta">
-                {form.jam_mulai}–{form.jam_selesai} · {form.ruang || 'tanpa ruang'} · {namaPengajar}
+              {jumlahBentrok ? (
+                <>
+                  <strong>{jumlahBentrok} jadwal bentrok terdeteksi!</strong>
+                  <p style={{ marginTop: '4px' }}>
+                    Sesuai konfigurasi <strong>Strict Mode</strong>, jadwal yang bentrok diblokir dan tidak dapat disimpan. Silakan klik tombol &quot;Ubah pengaturan&quot; untuk memilih Dosen PJ atau waktu lain.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <strong>Bebas Bentrok!</strong> {preview.length} pertemuan siap disimpan dengan Dosen PJ: <strong>{namaPengajar}</strong>.
+                </>
+              )}
+              <p className="alert-meta" style={{ marginTop: '6px' }}>
+                Waktu: {form.jam_mulai}–{form.jam_selesai} · Ruang: {form.ruang || 'Belum ditentukan'} · Pengajar: {namaPengajar}
               </p>
             </div>
           </div>

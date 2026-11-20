@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../../../services/api.js';
 import Modal from '../../../components/ui/Modal.jsx';
 import Icon from '../../../components/ui/Icon.jsx';
-import { todayInput } from '../../../config/pelatihan.js';
+import { PRESET_SESI, todayInput } from '../../../config/pelatihan.js';
 import PengajarSelect from './PengajarSelect.jsx';
 
 function PertemuanFormModal({ kelas, pertemuan, onClose, onSaved }) {
@@ -19,7 +19,7 @@ function PertemuanFormModal({ kelas, pertemuan, onClose, onSaved }) {
           id_pengajar: String(pertemuan.pengajar.id_pengguna),
           topik: pertemuan.topik ?? '',
         }
-      : { tanggal: todayInput(), jam_mulai: '09:00', jam_selesai: '10:40', ruang: '', id_pengajar: '', topik: '' }
+      : { tanggal: todayInput(), jam_mulai: '09:00', jam_selesai: '11:00', ruang: '', id_pengajar: '', topik: '' }
   );
   const [errors, setErrors] = useState({});
   const [bentrok, setBentrok] = useState([]);
@@ -28,6 +28,12 @@ function PertemuanFormModal({ kelas, pertemuan, onClose, onSaved }) {
   const set = (name) => (e) => {
     setForm((f) => ({ ...f, [name]: e.target.value }));
     setErrors((er) => ({ ...er, [name]: undefined }));
+    setBentrok([]);
+  };
+
+  const pilihSesi = (s) => {
+    setForm((f) => ({ ...f, jam_mulai: s.jam_mulai, jam_selesai: s.jam_selesai }));
+    setErrors((er) => ({ ...er, jam: undefined }));
     setBentrok([]);
   };
 
@@ -91,6 +97,27 @@ function PertemuanFormModal({ kelas, pertemuan, onClose, onSaved }) {
       )}
 
       <form id="pertemuan-form" className="form-grid" onSubmit={handleSubmit} noValidate>
+        {!waktuTerkunci && (
+          <div className="field field-full">
+            <span className="field-label">Pilihan Cepat Sesi</span>
+            <div className="preset-group" role="group">
+              {PRESET_SESI.map((s) => {
+                const aktif = form.jam_mulai === s.jam_mulai && form.jam_selesai === s.jam_selesai;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`preset-btn ${aktif ? 'active' : ''}`}
+                    onClick={() => pilihSesi(s)}
+                  >
+                    <Icon name="clock" size={14} /> {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="field">
           <span className="field-label">Tanggal</span>
           <input className="input input-plain" type="date" value={form.tanggal} onChange={set('tanggal')} disabled={waktuTerkunci} />
@@ -114,7 +141,7 @@ function PertemuanFormModal({ kelas, pertemuan, onClose, onSaved }) {
           <input className="input input-plain" value={form.ruang} onChange={set('ruang')} placeholder="Ruang Bahasa 1" maxLength={50} />
         </div>
         <div className="field field-span-2">
-          <span className="field-label">Pengajar (yang tersedia)</span>
+          <span className="field-label">Dosen Pengajar (Bebas Bentrok)</span>
           <PengajarSelect
             idKelas={kelas.id_kelas}
             waktu={waktuValid ? { tanggal: form.tanggal, jam_mulai: form.jam_mulai, jam_selesai: form.jam_selesai, abaikan_id: pertemuan?.id_pertemuan } : null}
