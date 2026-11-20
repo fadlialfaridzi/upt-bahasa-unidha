@@ -4,21 +4,27 @@ import {
   getPelatihanById,
   daftarPelatihan,
   getMyPelatihan,
-  updateStatusPelatihan,
+  uploadBuktiPembayaran,
 } from '../controllers/pelatihan.controller.js';
-import { authenticate, authorizeAdmin } from '../middlewares/auth.middleware.js';
+import { authenticate } from '../middlewares/auth.middleware.js';
+import { uploadBukti } from '../middlewares/upload.middleware.js';
 
 const router = Router();
 
-// Public
-router.get('/', getAllPelatihan);
-router.get('/:id', getPelatihanById);
+// Middleware opsional untuk mengambil info user jika token disertakan pada route publik
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return next();
+  return authenticate(req, res, next);
+};
 
-// User - butuh login
+// Publik & Mahasiswa
+router.get('/', optionalAuth, getAllPelatihan);
+router.get('/my-pendaftaran', authenticate, getMyPelatihan);
+router.get('/:id', optionalAuth, getPelatihanById);
+
+// Pendaftaran & Pembayaran Pelatihan
 router.post('/daftar', authenticate, daftarPelatihan);
-router.get('/my-pelatihan', authenticate, getMyPelatihan);
-
-// Admin only
-router.patch('/pendaftaran/:id/status', authenticate, authorizeAdmin, updateStatusPelatihan);
+router.post('/pembayaran/upload', authenticate, uploadBukti.single('bukti'), uploadBuktiPembayaran);
 
 export default router;
