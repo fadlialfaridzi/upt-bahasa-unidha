@@ -65,6 +65,17 @@ export const STATUS_PRESENSI = {
 
 export const JENIS_BENTROK = { pengajar: 'Pengajar', kegiatan: 'Kegiatan dosen', ruang: 'Ruang', kelas: 'Kelas' };
 
+// Preset jadwal default pelatihan
+export const PRESET_POLA_HARI = [
+  { id: 'kelas_1', label: 'Kelas 1 (Senin, Rabu, Jumat)', shortLabel: 'Kelas 1 (Sen, Rab, Jum)', hari: [1, 3, 5] },
+  { id: 'kelas_2', label: 'Kelas 2 (Selasa, Kamis, Sabtu)', shortLabel: 'Kelas 2 (Sel, Kam, Sab)', hari: [2, 4, 6] },
+];
+
+export const PRESET_SESI = [
+  { id: 'sesi_1', label: 'Sesi 1 (09.00 – 11.00 Pagi)', shortLabel: 'Sesi 1: 09.00–11.00', jam_mulai: '09:00', jam_selesai: '11:00' },
+  { id: 'sesi_2', label: 'Sesi 2 (13.30 – 15.30 Siang)', shortLabel: 'Sesi 2: 13.30–15.30', jam_mulai: '13:30', jam_selesai: '15:30' },
+];
+
 export const todayInput = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
