@@ -20,6 +20,7 @@ import SuperAdminUsersPage from './pages/dashboard/SuperAdminUsersPage.jsx';
 import AdminDashboard from './pages/dashboard/AdminDashboard.jsx';
 import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
+import MahasiswaPelatihanPage from './pages/dashboard/mahasiswa/MahasiswaPelatihanPage.jsx';
 import KelasAdminPage from './pages/dashboard/admin/KelasAdminPage.jsx';
 import JadwalKelasPage from './pages/dashboard/admin/JadwalKelasPage.jsx';
 import KegiatanDosenPage from './pages/dashboard/dosen/KegiatanDosenPage.jsx';
@@ -47,6 +48,7 @@ function App() {
             <Route path="dosen"       element={<RoleRoute dashboard="dosen"><DosenDashboard /></RoleRoute>} />
             <Route path="dosen/jadwal" element={<RoleRoute dashboard="dosen"><KegiatanDosenPage /></RoleRoute>} />
             <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
+            <Route path="mahasiswa/pelatihan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPelatihanPage /></RoleRoute>} />
           </Route>
         </Route>
 
