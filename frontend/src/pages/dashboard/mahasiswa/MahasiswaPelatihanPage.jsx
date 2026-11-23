@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../../services/api.js';
 import Icon from '../../../components/ui/Icon.jsx';
@@ -21,7 +22,20 @@ const STATUS_CICILAN_BADGE = {
 };
 
 function MahasiswaPelatihanPage() {
-  const [activeTab, setActiveTab] = useState('katalog'); // 'katalog' | 'saya'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paramTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(paramTab === 'tagihan' || paramTab === 'saya' ? 'saya' : 'katalog');
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t === 'tagihan' || t === 'saya') setActiveTab('saya');
+    else if (t === 'katalog') setActiveTab('katalog');
+  }, [searchParams]);
+
+  const switchTab = (tabName) => {
+    setActiveTab(tabName);
+    setSearchParams(tabName === 'saya' ? { tab: 'tagihan' } : {});
+  };
   const [kelasTersedia, setKelasTersedia] = useState([]);
   const [pendaftaranSaya, setPendaftaranSaya] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +102,7 @@ function MahasiswaPelatihanPage() {
       <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid var(--line)', marginBottom: '24px' }}>
         <button
           type="button"
-          onClick={() => setActiveTab('katalog')}
+          onClick={() => switchTab('katalog')}
           style={{
             padding: '10px 18px',
             border: 'none',
@@ -112,7 +126,7 @@ function MahasiswaPelatihanPage() {
 
         <button
           type="button"
-          onClick={() => setActiveTab('saya')}
+          onClick={() => switchTab('saya')}
           style={{
             padding: '10px 18px',
             border: 'none',
