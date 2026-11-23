@@ -53,7 +53,7 @@ export const DASHBOARDS = {
       { label: 'Tes TOEFL', icon: 'graduation' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/mahasiswa/pelatihan' },
       { label: 'Penerjemahan', icon: 'languages' },
-      { label: 'Tagihan', icon: 'wallet' },
+      { label: 'Tagihan', icon: 'wallet', path: '/dashboard/mahasiswa/pelatihan?tab=tagihan' },
       { label: 'Presensi & EWS', icon: 'qr' },
       { label: 'Sertifikat', icon: 'award' },
     ],
