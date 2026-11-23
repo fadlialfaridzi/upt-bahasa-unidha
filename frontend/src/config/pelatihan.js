@@ -76,6 +76,21 @@ export const PRESET_SESI = [
   { id: 'sesi_2', label: 'Sesi 2 (13.30 – 15.30 Siang)', shortLabel: 'Sesi 2: 13.30–15.30', jam_mulai: '13:30', jam_selesai: '15:30' },
 ];
 
+export const STATUS_WAKTU = {
+  selesai: { label: 'Selesai', badge: 'badge-muted' },
+  berlangsung: { label: 'Berlangsung', badge: 'badge-success' },
+  akan_datang: { label: 'Akan datang', badge: 'badge-accent' },
+};
+
+/** "Hari ini" / "Besok" / "Sen, 24 Nov" untuk tanggal YYYY-MM-DD. */
+export const tanggalRelatif = (iso, hari) => {
+  const today = todayInput();
+  const besok = new Date(Date.parse(`${today}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
+  if (iso === today) return 'Hari ini';
+  if (iso === besok) return 'Besok';
+  return `${hari ? `${hari.slice(0, 3)}, ` : ''}${formatTanggal(iso, { day: 'numeric', month: 'short' })}`;
+};
+
 export const todayInput = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);

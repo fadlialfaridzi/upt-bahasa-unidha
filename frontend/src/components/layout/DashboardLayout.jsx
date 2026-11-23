@@ -127,7 +127,7 @@ function DashboardLayout() {
 
         <div className="sidebar-foot">
           <strong>Tahun akademik 2026/2027</strong>
-          Dashboard sementara · data belum terhubung
+          Portal layanan UPT Bahasa
         </div>
       </aside>
 

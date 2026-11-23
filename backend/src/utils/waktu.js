@@ -21,3 +21,32 @@ export const fmtJam = (d) => d.toISOString().slice(11, 16);
 export const menit = (d) => d.getUTCHours() * 60 + d.getUTCMinutes();
 export const namaHari = (d) => NAMA_HARI[d.getUTCDay()];
 export const tambahHari = (d, n) => new Date(d.getTime() + n * 86400000);
+
+/** Senin dari minggu yang memuat `tgl` (minggu dihitung Senin–Minggu). */
+export const awalMinggu = (tgl) => tambahHari(tgl, -((tgl.getUTCDay() + 6) % 7));
+
+/** Tanggal (UTC tengah malam) & menit-dalam-hari saat ini menurut WIB (UTC+7). */
+export const sekarangWIB = () => {
+  const d = new Date(Date.now() + 7 * 3600000);
+  return {
+    tanggal: new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())),
+    menit: d.getUTCHours() * 60 + d.getUTCMinutes(),
+  };
+};
+
+/** Timestamp (mis. tanggal_daftar) -> tanggal kalender WIB sebagai Date UTC tengah malam. */
+export const tanggalWIB = (d) => {
+  const w = new Date(d.getTime() + 7 * 3600000);
+  return new Date(Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate()));
+};
+
+/** Status waktu pertemuan relatif terhadap `now` (dari sekarangWIB): 'selesai' | 'berlangsung' | 'akan_datang'. */
+export const statusWaktu = (p, now) => {
+  const t = p.tanggal.getTime();
+  const hariIni = now.tanggal.getTime();
+  if (t < hariIni) return 'selesai';
+  if (t > hariIni) return 'akan_datang';
+  if (menit(p.jam_selesai) <= now.menit) return 'selesai';
+  if (menit(p.jam_mulai) <= now.menit) return 'berlangsung';
+  return 'akan_datang';
+};
