@@ -10,6 +10,8 @@ import adminUserRoutes from './routes/admin.user.routes.js';
 import kelasRoutes from './routes/kelas.routes.js';
 import pengajarRoutes from './routes/pengajar.routes.js';
 import kegiatanRoutes from './routes/kegiatan.routes.js';
+import { dosenRoutes, adminPelatihanRoutes } from './routes/dashboard.routes.js';
+import pembayaranRoutes from './routes/pembayaran.routes.js';
 
 dotenv.config();
 
@@ -36,6 +38,9 @@ app.use('/api/admin', adminUserRoutes);
 app.use('/api/kelas', kelasRoutes);
 app.use('/api/pengajar', pengajarRoutes);
 app.use('/api/kegiatan-dosen', kegiatanRoutes);
+app.use('/api/dosen', dosenRoutes);
+app.use('/api/admin-pelatihan', adminPelatihanRoutes);
+app.use('/api/pembayaran', pembayaranRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

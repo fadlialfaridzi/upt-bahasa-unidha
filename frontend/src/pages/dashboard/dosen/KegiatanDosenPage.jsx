@@ -62,17 +62,42 @@ function KegiatanDosenPage() {
     }
   };
 
-  // Kegiatan yang berlaku pada tiap hari di minggu yang ditampilkan (Senin..Minggu)
+  // Jadwal mengajar UPT (hanya baca) untuk minggu yang ditampilkan
+  const [mengajar, setMengajar] = useState([]);
+  useEffect(() => {
+    let batal = false;
+    api
+      .get('/dosen/mengajar', { params: { dari: senin, sampai: isoTambahHari(senin, 6) } })
+      .then((res) => !batal && setMengajar(res.data.data))
+      .catch(() => !batal && setMengajar([]));
+    return () => {
+      batal = true;
+    };
+  }, [senin, kegiatan]);
+
+  // Kegiatan pribadi + jadwal mengajar UPT pada tiap hari di minggu yang ditampilkan (Senin..Minggu)
   const minggu = useMemo(
     () =>
       HARI.map((h, i) => {
         const tanggal = isoTambahHari(senin, i);
-        const items = kegiatan
-          .filter((g) => g.hari === h.value && g.tanggal_mulai <= tanggal && g.tanggal_selesai >= tanggal)
-          .sort((a, b) => a.jam_mulai.localeCompare(b.jam_mulai));
+        const items = [
+          ...kegiatan
+            .filter((g) => g.hari === h.value && g.tanggal_mulai <= tanggal && g.tanggal_selesai >= tanggal)
+            .map((g) => ({ key: `k${g.id_kegiatan}`, jenis: 'kegiatan', jam_mulai: g.jam_mulai, jam_selesai: g.jam_selesai, judul: g.judul })),
+          ...mengajar
+            .filter((p) => p.tanggal === tanggal)
+            .map((p) => ({
+              key: `p${p.id_pertemuan}`,
+              jenis: 'mengajar',
+              jam_mulai: p.jam_mulai,
+              jam_selesai: p.jam_selesai,
+              judul: `${p.nama_kelas} · P${p.pertemuan_ke}`,
+              ruang: p.ruang,
+            })),
+        ].sort((a, b) => a.jam_mulai.localeCompare(b.jam_mulai));
         return { ...h, tanggal, items };
       }),
-    [kegiatan, senin]
+    [kegiatan, mengajar, senin]
   );
 
   const urut = useMemo(
@@ -122,7 +147,10 @@ function KegiatanDosenPage() {
                 <h2 className="panel-title">
                   Minggu {formatTanggal(senin, { day: 'numeric', month: 'short' })} – {formatTanggal(isoTambahHari(senin, 6))}
                 </h2>
-                <p className="panel-sub">Slot kosong berarti Anda tersedia untuk mengajar di UPT.</p>
+                <p className="panel-sub">
+                  <span className="legend legend-kegiatan" /> Kegiatan Anda
+                  <span className="legend legend-mengajar" /> Mengajar di UPT (diatur admin) · slot kosong = tersedia
+                </p>
               </div>
               <div className="week-nav">
                 <button type="button" className="icon-action" onClick={() => setSenin((s) => isoTambahHari(s, -7))} aria-label="Minggu sebelumnya">
@@ -145,9 +173,10 @@ function KegiatanDosenPage() {
                     <p className="week-free">Tersedia</p>
                   ) : (
                     d.items.map((g) => (
-                      <div key={g.id_kegiatan} className="week-item">
-                        <span>{g.jam_mulai}–{g.jam_selesai}</span>
+                      <div key={g.key} className={`week-item ${g.jenis === 'mengajar' ? 'is-mengajar' : ''}`}>
+                        <span>{g.jam_mulai}–{g.jam_selesai}{g.jenis === 'mengajar' && ' · Mengajar UPT'}</span>
                         <strong>{g.judul}</strong>
+                        {g.ruang && <small>{g.ruang}</small>}
                       </div>
                     ))
                   )}

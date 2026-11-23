@@ -28,7 +28,7 @@ export const DASHBOARDS = {
       { label: 'Sesi TOEFL', icon: 'graduation' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/admin/kelas' },
       { label: 'Penerjemahan', icon: 'languages' },
-      { label: 'Tagihan & pembayaran', icon: 'wallet' },
+      { label: 'Tagihan & pembayaran', icon: 'wallet', path: '/dashboard/admin/pembayaran' },
       { label: 'Sertifikat', icon: 'award' },
       { label: 'Analitik', icon: 'chart' },
     ],
@@ -38,7 +38,7 @@ export const DASHBOARDS = {
     label: 'Dosen',
     menu: [
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/dosen' },
-      { label: 'Kelas saya', icon: 'graduation' },
+      { label: 'Kelas saya', icon: 'graduation', path: '/dashboard/dosen/kelas' },
       { label: 'Jadwal kegiatan', icon: 'calendar', path: '/dashboard/dosen/jadwal' },
       { label: 'Presensi QR', icon: 'qr' },
       { label: 'Materi', icon: 'book' },
