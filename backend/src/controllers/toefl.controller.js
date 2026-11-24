@@ -1,5 +1,7 @@
 import prisma from '../lib/prisma.js';
 import { catatAudit } from '../utils/audit.js';
+import path from 'path';
+import fs from 'fs';
 
 const parseId = (raw) => {
   const id = Number(raw);
@@ -222,6 +224,29 @@ export const getMyPendaftaran = async (req, res) => {
     res.json({ data: pendaftaran.map(serializePendaftaran) });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil data pendaftaran', error: error.message });
+  }
+};
+
+export const getBuktiToefl = async (req, res) => {
+  try {
+    const idPendaftaran = parseId(req.params.id);
+    if (!idPendaftaran) return res.status(400).json({ message: 'Pendaftaran TOEFL tidak valid' });
+    const pendaftaran = await prisma.pendaftaran_toefl.findFirst({
+      where: { id_pendaftaran: idPendaftaran, id_pengguna: req.user.id },
+      include: { tagihan: { include: { pembayaran: { take: 1, orderBy: { tanggal_unggah: 'desc' } } } } },
+    });
+    const buktiPath = pendaftaran?.tagihan?.pembayaran?.[0]?.bukti_path;
+    if (!buktiPath) return res.status(404).json({ message: 'Bukti pembayaran belum tersedia' });
+    const uploadsRoot = path.resolve('uploads');
+    const filePath = path.resolve(buktiPath);
+    if (!filePath.startsWith(uploadsRoot + path.sep) || !fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File bukti tidak ditemukan' });
+    }
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.sendFile(filePath);
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal membuka bukti pembayaran', error: error.message });
   }
 };
 

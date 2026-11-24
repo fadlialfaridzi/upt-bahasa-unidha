@@ -3687,6 +3687,22 @@ input {
   color: var(--muted);
   font-size: 0.82rem;
 }
+.proof-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border: 1px solid #f0b3b3;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--danger);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.proof-drop:has(.proof-remove-btn) {
+  min-height: 180px;
+  padding: 12px;
+}
 .toefl-next {
   padding-left: 18px;
   display: grid;
