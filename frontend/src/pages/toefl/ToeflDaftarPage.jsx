@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api.js';
 import Icon from '../../components/ui/Icon.jsx';
@@ -32,6 +32,7 @@ const formatWaktu = (value) => value
 function ToeflDaftarPage() {
   const { jadwalId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [profile, setProfile] = useState({ nama_lengkap: '', nim: '', program_studi: '', no_hp: '', email: '' });
@@ -43,6 +44,7 @@ function ToeflDaftarPage() {
   const [submitting, setSubmitting] = useState(false);
   const [file, setFile] = useState(null);
   const [buktiPreview, setBuktiPreview] = useState(false);
+  const [activeRegistration, setActiveRegistration] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -65,7 +67,12 @@ function ToeflDaftarPage() {
         item.status !== 'dibatalkan' &&
         (!jadwalId || item.sesi.id_sesi === Number(jadwalId))
       );
-      if (owned) {
+      setActiveRegistration(owned || null);
+
+      const resumeMode = searchParams.get('mode') === 'lanjut';
+      const newMode = searchParams.get('mode') === 'baru';
+
+      if (owned && resumeMode) {
         setPendaftaran(owned);
         setSelectedId(owned.sesi.id_sesi);
         setSelected(owned.sesi);
@@ -73,14 +80,25 @@ function ToeflDaftarPage() {
         if (owned.status === 'terverifikasi') setStep(6);
         else if (paymentStatus === 'menunggu') setStep(5);
         else setStep(4);
+      } else if (newMode) {
+        setPendaftaran(null);
+        setSelectedId(null);
+        setSelected(null);
+        setActiveRegistration(null);
+        setStep(1);
       } else if (jadwalId) {
         setStep(2);
+      } else {
+        setPendaftaran(null);
+        setSelectedId(null);
+        setSelected(null);
+        setStep(1);
       }
     }).finally(() => {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [jadwalId]);
+  }, [jadwalId, searchParams]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -236,6 +254,17 @@ function ToeflDaftarPage() {
           <section className="panel toefl-register-main">
             <header className="panel-head"><div><h2 className="panel-title">Lengkapi data diri</h2><p className="panel-sub">Pastikan identitas sesuai kartu identitas sebelum mencetak kartu ujian.</p></div></header>
             <div className="panel-body">
+              {activeRegistration && (
+                <div className="toefl-active-registration">
+                  <div>
+                    <strong>Pendaftaran sebelumnya ditemukan</strong>
+                    <p className="cell-sub">{activeRegistration.sesi?.nama_sesi || 'Sesi TOEFL'} · Status {activeRegistration.status === 'terverifikasi' ? 'Terverifikasi' : 'Dalam proses'}</p>
+                  </div>
+                  <button type="button" className="btn btn-soft btn-sm" onClick={() => navigate('/dashboard/mahasiswa/toefl?mode=lanjut')}>
+                    Lanjutkan pendaftaran
+                  </button>
+                </div>
+              )}
               <div className="form-grid">
                 <Field label="NIK / NIM" hint="Mahasiswa gunakan NIM">
                   <input className="input input-plain" name="nim" value={profile.nim} onChange={updateProfile} />
@@ -394,6 +423,9 @@ function ToeflDaftarPage() {
                 </footer>
               </div>
               <button type="button" className="btn btn-primary btn-block exam-screen-actions" onClick={() => window.print()}><Icon name="download" size={17} /> Unduh / Cetak PDF Kartu Ujian</button>
+              <button type="button" className="btn btn-outline btn-block exam-screen-actions" onClick={() => navigate('/dashboard/mahasiswa/toefl?mode=baru')}>
+                Daftar Ujian Baru
+              </button>
             </div>
           </section>
           <aside className="toefl-register-side">
