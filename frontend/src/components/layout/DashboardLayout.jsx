@@ -25,10 +25,29 @@ function DashboardLayout() {
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    api.get('/notifikasi')
-      .then((res) => setNotifications(res.data.data || []))
-      .catch(() => setNotifications([]));
+    if (!user) {
+      setNotifications([]);
+      return undefined;
+    }
+
+    let active = true;
+    const loadNotifications = async () => {
+      try {
+        const res = await api.get('/notifikasi');
+        if (active) setNotifications(res.data.data || []);
+      } catch (error) {
+        if (active) console.error('Gagal memperbarui notifikasi:', error);
+      }
+    };
+
+    loadNotifications();
+    const interval = window.setInterval(loadNotifications, 30000);
+    window.addEventListener('focus', loadNotifications);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', loadNotifications);
+    };
   }, [user]);
 
   const unreadCount = notifications.filter((item) => !item.sudah_dibaca).length;
@@ -41,9 +60,18 @@ function DashboardLayout() {
       ));
     }
     setNotificationOpen(false);
-    navigate(item.judul?.includes('verifikasi') || item.judul?.includes('pembayaran')
-      ? '/dashboard/mahasiswa/toefl?mode=lanjut'
-      : '/dashboard/mahasiswa');
+    const isPaymentNotification = item.jenis === 'pembayaran_toefl'
+      || item.jenis === 'pembayaran'
+      || item.judul?.includes('verifikasi')
+      || item.judul?.includes('pembayaran');
+    const isAdmin = user?.role === 'staf_upt';
+    let target = '/dashboard/mahasiswa';
+    if (item.jenis === 'pembayaran_toefl') {
+      target = isAdmin ? '/dashboard/admin/toefl/pembayaran' : '/dashboard/mahasiswa/toefl?mode=lanjut';
+    } else if (isPaymentNotification && isAdmin) {
+      target = '/dashboard/admin/pembayaran';
+    }
+    navigate(target);
   };
 
   const markAllRead = async () => {

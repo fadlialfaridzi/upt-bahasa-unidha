@@ -17,7 +17,7 @@ const LAYANAN = { pelatihan: 'Pelatihan', toefl: 'TOEFL', penerjemahan: 'Penerje
 const waktu = (iso) =>
   iso ? new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 
-function VerifikasiPembayaranPage() {
+function VerifikasiPembayaranPage({ jenisLayanan = null }) {
   const [status, setStatus] = useState('menunggu');
   const [q, setQ] = useState('');
   const [list, setList] = useState([]);
@@ -30,7 +30,9 @@ function VerifikasiPembayaranPage() {
     setLoading(true);
     setGagal(false);
     try {
-      const res = await api.get('/pembayaran', { params: { status, q: q.trim() || undefined } });
+      const res = await api.get('/pembayaran', {
+        params: { status, q: q.trim() || undefined, jenis_layanan: jenisLayanan || undefined },
+      });
       setList(res.data.data);
       setJumlah(res.data.jumlah);
     } catch {
@@ -53,9 +55,11 @@ function VerifikasiPembayaranPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Tagihan & pembayaran"
-        title="Verifikasi pembayaran"
-        subtitle="Periksa bukti transfer peserta, lalu terima atau tolak dengan alasan."
+        eyebrow={jenisLayanan === 'toefl' ? 'TOEFL / Pembayaran' : 'Tagihan & pembayaran'}
+        title={jenisLayanan === 'toefl' ? 'Validasi Pembayaran TOEFL' : 'Verifikasi pembayaran'}
+        subtitle={jenisLayanan === 'toefl'
+          ? 'Tinjau bukti transfer peserta TOEFL, lalu verifikasi atau tolak dengan alasan yang jelas.'
+          : 'Periksa bukti transfer peserta, lalu terima atau tolak dengan alasan.'}
       />
 
       <div className="tabs" role="tablist" aria-label="Status pembayaran">
@@ -78,7 +82,13 @@ function VerifikasiPembayaranPage() {
         <div className="toolbar toolbar-single">
           <div className="input-wrap">
             <Icon name="search" size={18} className="input-icon" />
-            <input className="input" placeholder="Cari nama peserta, kelas, atau kode tagihan" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari pembayaran" />
+            <input
+              className="input"
+              placeholder={jenisLayanan === 'toefl' ? 'Cari nama peserta, NIM, atau kode tagihan' : 'Cari nama peserta, kelas, atau kode tagihan'}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              aria-label="Cari pembayaran"
+            />
           </div>
         </div>
 
@@ -92,8 +102,14 @@ function VerifikasiPembayaranPage() {
         ) : list.length === 0 ? (
           <EmptyState
             icon={status === 'menunggu' ? 'checkCircle' : 'wallet'}
-            title={q ? 'Tidak ada yang cocok' : status === 'menunggu' ? 'Tidak ada bukti yang menunggu' : 'Belum ada data'}
-            text={status === 'menunggu' && !q ? 'Bukti pembayaran yang diunggah peserta akan muncul di sini.' : undefined}
+            title={q
+              ? 'Tidak ada yang cocok'
+              : status === 'menunggu'
+                ? `Tidak ada bukti ${jenisLayanan === 'toefl' ? 'TOEFL ' : ''}yang menunggu`
+                : 'Belum ada data'}
+            text={status === 'menunggu' && !q
+              ? `Bukti pembayaran${jenisLayanan === 'toefl' ? ' TOEFL' : ''} yang diunggah peserta akan muncul di sini.`
+              : undefined}
           />
         ) : (
           <div className="table-wrap">
