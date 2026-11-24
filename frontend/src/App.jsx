@@ -20,6 +20,7 @@ import AdminDashboard from './pages/dashboard/AdminDashboard.jsx';
 import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
 import MahasiswaPelatihanPage from './pages/dashboard/mahasiswa/MahasiswaPelatihanPage.jsx';
+import TagihanToeflPage from './pages/dashboard/mahasiswa/TagihanToeflPage.jsx';
 import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
 import KelasAdminPage from './pages/dashboard/admin/KelasAdminPage.jsx';
 import JadwalKelasPage from './pages/dashboard/admin/JadwalKelasPage.jsx';
@@ -60,6 +61,7 @@ function App() {
             <Route path="dosen/kelas" element={<RoleRoute dashboard="dosen"><KelasSayaPage /></RoleRoute>} />
             <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
             <Route path="mahasiswa/pelatihan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPelatihanPage /></RoleRoute>} />
+            <Route path="mahasiswa/toefl/tagihan" element={<RoleRoute dashboard="mahasiswa"><TagihanToeflPage /></RoleRoute>} />
             <Route path="mahasiswa/toefl" element={<RoleRoute dashboard="mahasiswa"><ToeflDaftarPage /></RoleRoute>} />
           </Route>
         </Route>
