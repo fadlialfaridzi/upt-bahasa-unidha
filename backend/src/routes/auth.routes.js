@@ -8,6 +8,7 @@ import {
   resetPassword,
   switchRole,
   grantRoleEkstra,
+  updateProfile,
 } from '../controllers/auth.controller.js';
 import { authenticate, authorizeAdmin } from '../middlewares/auth.middleware.js';
 
@@ -24,6 +25,7 @@ router.post('/reset-password',   resetPassword);
 
 // ─── Butuh login ─────────────────────────────────────────────────────────────
 router.get('/profile',           authenticate, getProfile);
+router.put('/profile',           authenticate, updateProfile);
 router.post('/switch-role',      authenticate, switchRole);
 
 // ─── Hanya super_admin ───────────────────────────────────────────────────────

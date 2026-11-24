@@ -120,6 +120,33 @@ export const getProfile = async (req, res) => {
   }
 };
 
+export const updateProfile = async (req, res) => {
+  try {
+    const allowed = ['nama_lengkap', 'nim', 'program_studi', 'no_hp', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin'];
+    const data = {};
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) data[field] = req.body[field] === '' ? null : req.body[field];
+    }
+    if (data.nama_lengkap !== undefined) {
+      data.nama_lengkap = String(data.nama_lengkap).trim();
+      if (data.nama_lengkap.length < 3) return res.status(400).json({ message: 'Nama lengkap minimal 3 karakter' });
+    }
+    if (data.no_hp !== undefined && data.no_hp && !/^[0-9+\s-]{8,25}$/.test(data.no_hp)) {
+      return res.status(400).json({ message: 'Nomor WhatsApp tidak valid' });
+    }
+    if (data.tanggal_lahir) data.tanggal_lahir = new Date(data.tanggal_lahir);
+
+    const user = await prisma.pengguna.update({
+      where: { id_pengguna: req.user.id },
+      data,
+      include: { role: true, role_ekstra: true },
+    });
+    res.json({ message: 'Profil berhasil diperbarui', data: toUserResponse(user) });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal memperbarui profil', error: error.message });
+  }
+};
+
 // ─── Reset Password via OTP ───────────────────────────────────────────────────
 
 /**

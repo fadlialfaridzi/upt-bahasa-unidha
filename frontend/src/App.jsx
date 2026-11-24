@@ -12,7 +12,6 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import VerifyOtpPage from './pages/auth/VerifyOtpPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import ToeflJadwalPage from './pages/toefl/ToeflJadwalPage.jsx';
-import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
 import PelatihanPage from './pages/pelatihan/PelatihanPage.jsx';
 import TerjemahanPage from './pages/terjemahan/TerjemahanPage.jsx';
 import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard.jsx';
@@ -21,6 +20,7 @@ import AdminDashboard from './pages/dashboard/AdminDashboard.jsx';
 import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
 import MahasiswaPelatihanPage from './pages/dashboard/mahasiswa/MahasiswaPelatihanPage.jsx';
+import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
 import KelasAdminPage from './pages/dashboard/admin/KelasAdminPage.jsx';
 import JadwalKelasPage from './pages/dashboard/admin/JadwalKelasPage.jsx';
 import VerifikasiPembayaranPage from './pages/dashboard/admin/VerifikasiPembayaranPage.jsx';
@@ -53,6 +53,7 @@ function App() {
             <Route path="dosen/kelas" element={<RoleRoute dashboard="dosen"><KelasSayaPage /></RoleRoute>} />
             <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
             <Route path="mahasiswa/pelatihan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPelatihanPage /></RoleRoute>} />
+            <Route path="mahasiswa/toefl" element={<RoleRoute dashboard="mahasiswa"><ToeflDaftarPage /></RoleRoute>} />
           </Route>
         </Route>
 
