@@ -20,6 +20,11 @@ const toUserResponse = (u) => ({
   nama:          u.nama_lengkap,     // alias untuk frontend lama
   email:         u.email,
   no_hp:         u.no_hp,
+  nim:           u.nim,
+  program_studi: u.program_studi,
+  tempat_lahir:  u.tempat_lahir,
+  tanggal_lahir: u.tanggal_lahir,
+  jenis_kelamin: u.jenis_kelamin,
   tipe_pengguna: u.tipe_pengguna,
   role:          u.role.nama_role,
   role_ekstra:   u.role_ekstra?.nama_role ?? null,
