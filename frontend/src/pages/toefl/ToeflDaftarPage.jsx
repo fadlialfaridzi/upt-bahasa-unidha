@@ -361,13 +361,39 @@ function ToeflDaftarPage() {
       {step === 6 && (
         <div className="toefl-register-layout">
           <section className="panel toefl-register-main">
-            <header className="panel-head"><div><h2 className="panel-title">Pendaftaran Anda terverifikasi</h2><p className="panel-sub">Simpan kartu peserta ini dan bawa pada hari ujian.</p></div></header>
-            <div className="panel-body">
-              <div className="exam-card">
-                <div className="exam-card-head"><div><strong>UPT Bahasa UNIDHA</strong><small>Kartu Peserta TOEFL ITP</small></div><span className="badge badge-success">TERVERIFIKASI</span></div>
-                <dl><ConfirmRow label="Nama" value={profile.nama_lengkap} /><ConfirmRow label="NIM" value={profile.nim || '-'} /><ConfirmRow label="Nomor pendaftaran" value={pendaftaran ? `TFL-2026-${String(pendaftaran.id_pendaftaran).padStart(4, '0')}` : '-'} /><ConfirmRow label="Tanggal ujian" value={formatTanggal(currentSession?.tanggal)} /><ConfirmRow label="Waktu" value={`${formatWaktu(currentSession?.waktu)} WIB`} /><ConfirmRow label="Lokasi" value={currentSession?.lokasi || '-'} /></dl>
+            <header className="panel-head exam-screen-heading"><div><h2 className="panel-title">Pendaftaran Anda terverifikasi</h2><p className="panel-sub">Simpan kartu peserta ini dan bawa pada hari ujian.</p></div></header>
+            <div className="panel-body exam-print-root">
+              <div className="exam-card exam-card-print">
+                <div className="exam-card-brand">
+                  <div className="exam-card-logo">U</div>
+                  <div><strong>UPT Bahasa UNIDHA</strong><small>Universitas Dharma Andalas</small></div>
+                  <span>KARTU PESERTA TOEFL ITP</span>
+                </div>
+                <div className="exam-card-status">TERVERIFIKASI</div>
+                <dl>
+                  <ConfirmRow label="Nama Peserta" value={profile.nama_lengkap} />
+                  <ConfirmRow label="NIM / Identitas" value={profile.nim || '-'} />
+                  <ConfirmRow label="Program Studi" value={profile.program_studi || '-'} />
+                  <ConfirmRow label="Nomor Pendaftaran" value={pendaftaran ? `TFL-${new Date().getFullYear()}-${String(pendaftaran.id_pendaftaran).padStart(4, '0')}` : '-'} />
+                  <ConfirmRow label="Tanggal Ujian" value={formatTanggal(currentSession?.tanggal)} />
+                  <ConfirmRow label="Waktu" value={currentSession?.waktu_selesai ? `${formatWaktu(currentSession?.waktu)} - ${formatWaktu(currentSession?.waktu_selesai)} WIB` : `${formatWaktu(currentSession?.waktu)} WIB`} />
+                  <ConfirmRow label="Lokasi" value={currentSession?.lokasi || '-'} />
+                  <ConfirmRow label="Sesi" value={currentSession?.nama_sesi || '-'} />
+                </dl>
+                <div className="exam-card-rules">
+                  <strong>Hal yang wajib dibawa dan diperhatikan:</strong>
+                  <ul>
+                    <li>Pensil 2B, penghapus, dan kartu identitas diri.</li>
+                    <li>Peserta wajib hadir 15 menit sebelum ujian dimulai.</li>
+                    <li>Keterlambatan maksimal 30 menit tanpa tambahan waktu.</li>
+                  </ul>
+                </div>
+                <footer className="exam-card-footer">
+                  <span>UPT Bahasa Universitas Dharma Andalas</span>
+                  <strong>Hadir tepat waktu</strong>
+                </footer>
               </div>
-              <button type="button" className="btn btn-primary btn-block" onClick={() => window.print()}><Icon name="download" size={17} /> Unduh / Cetak Kartu Ujian</button>
+              <button type="button" className="btn btn-primary btn-block exam-screen-actions" onClick={() => window.print()}><Icon name="download" size={17} /> Unduh / Cetak PDF Kartu Ujian</button>
             </div>
           </section>
           <aside className="toefl-register-side">
