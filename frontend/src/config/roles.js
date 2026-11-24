@@ -26,6 +26,7 @@ export const DASHBOARDS = {
     menu: [
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/admin' },
       { label: 'Sesi TOEFL', icon: 'graduation' },
+      { label: 'Kuota TOEFL', icon: 'users', path: '/dashboard/admin/toefl/kuota' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/admin/kelas' },
       { label: 'Penerjemahan', icon: 'languages' },
       { label: 'Tagihan & pembayaran', icon: 'wallet', path: '/dashboard/admin/pembayaran' },
