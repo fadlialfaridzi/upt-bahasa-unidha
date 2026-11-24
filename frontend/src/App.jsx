@@ -26,6 +26,7 @@ import JadwalKelasPage from './pages/dashboard/admin/JadwalKelasPage.jsx';
 import ToeflSesiPage from './pages/dashboard/admin/ToeflSesiPage.jsx';
 import ToeflSesiFormPage from './pages/dashboard/admin/ToeflSesiFormPage.jsx';
 import VerifikasiPembayaranPage from './pages/dashboard/admin/VerifikasiPembayaranPage.jsx';
+import ToeflKuotaPage from './pages/dashboard/admin/ToeflKuotaPage.jsx';
 import KegiatanDosenPage from './pages/dashboard/dosen/KegiatanDosenPage.jsx';
 import KelasSayaPage from './pages/dashboard/dosen/KelasSayaPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
@@ -49,6 +50,7 @@ function App() {
             <Route path="admin"       element={<RoleRoute dashboard="admin"><AdminDashboard /></RoleRoute>} />
             <Route path="admin/kelas" element={<RoleRoute dashboard="admin"><KelasAdminPage /></RoleRoute>} />
             <Route path="admin/kelas/:id/jadwal" element={<RoleRoute dashboard="admin"><JadwalKelasPage /></RoleRoute>} />
+            <Route path="admin/toefl/kuota" element={<RoleRoute dashboard="admin"><ToeflKuotaPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi" element={<RoleRoute dashboard="admin"><ToeflSesiPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/tambah" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/:id/edit" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />

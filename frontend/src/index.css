@@ -3531,3 +3531,114 @@ input {
   to { transform: scale(1); opacity: 1; }
 }
 
+/* ---------- Kelola kuota TOEFL (#33) ---------- */
+.notice-warning {
+  margin-bottom: 16px;
+  background: var(--yellow-50);
+  color: var(--yellow-ink);
+  border-color: #eadf96;
+}
+
+.kuota-table tbody tr {
+  cursor: pointer;
+}
+
+.kuota-table tbody tr.row-selected {
+  background: var(--brand-50);
+  box-shadow: inset 3px 0 0 var(--brand-700);
+}
+
+.kuota-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.kuota-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kuota-form-grid .field-span-2 {
+  grid-column: span 2;
+}
+
+.kuota-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.kuota-side {
+  display: grid;
+  gap: 16px;
+}
+
+.rule-list {
+  display: grid;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.rule-list p {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 6px;
+}
+
+.rule-list strong {
+  color: var(--brand-700);
+}
+
+.override-history {
+  display: grid;
+  gap: 5px;
+  font-size: 0.82rem;
+}
+
+.override-history strong {
+  color: var(--brand-800);
+  text-transform: capitalize;
+}
+
+.override-history p,
+.override-history small {
+  color: var(--muted);
+}
+
+.kuota-pendaftar-panel {
+  margin-top: 16px;
+}
+
+.table-wrap-kuota-pendaftar {
+  margin-bottom: -22px;
+}
+
+@media (max-width: 900px) {
+  .kuota-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kuota-side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .kuota-form-grid,
+  .kuota-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kuota-form-grid .field-span-2 {
+    grid-column: auto;
+  }
+  .kuota-actions {
+    display: grid;
+  }
+  .kuota-actions .btn {
+    width: 100%;
+  }
+}
+

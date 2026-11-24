@@ -355,7 +355,6 @@ export const daftarTes = async (req, res) => {
       where: { id_pengguna: req.user.id, id_sesi: jadwalId, status: { not: 'dibatalkan' } },
     });
     if (existing) return res.status(409).json({ message: 'Anda sudah terdaftar di jadwal ini' });
-
     const pendaftaran = await prisma.pendaftaran_toefl.create({
       data: { id_pengguna: req.user.id, id_sesi: jadwalId, status: 'menunggu_pembayaran' },
     });
@@ -380,19 +379,172 @@ export const getMyPendaftaran = async (req, res) => {
 };
 
 export const updateStatusPendaftaran = async (req, res) => {
+  const id = parseId(req.params.id);
+  const valid = ['menunggu_pembayaran', 'terverifikasi', 'dibatalkan'];
+  if (!id) return res.status(400).json({ message: 'ID pendaftaran tidak valid' });
+  if (!valid.includes(req.body.status)) return res.status(400).json({ message: 'Status pendaftaran tidak valid' });
+  const pendaftaran = await prisma.pendaftaran_toefl.update({ where: { id_pendaftaran: id }, data: { status: req.body.status } });
+  res.json({ message: 'Status diperbarui', data: pendaftaran });
+};
+
+export const getKuotaToefl = async (req, res) => {
+  try {
+    const { status, q } = req.query;
+    const where = {};
+    if (status && ['terbuka', 'menunggu_override', 'dijadwalkan', 'selesai', 'dibatalkan'].includes(status)) where.status = status;
+    if (q?.trim()) where.nama_sesi = { contains: q.trim(), mode: 'insensitive' };
+
+    const includeSesi = {
+      _count: { select: { pendaftaran_toefl: true } },
+    };
+    const sesi = await prisma.sesi_toefl.findMany({
+      where,
+      include: includeSesi,
+      orderBy: [{ tanggal: 'desc' }, { id_sesi: 'desc' }],
+    });
+    const data = await Promise.all(sesi.map(async (item) => {
+      const [jumlahTerverifikasi, jumlahMenunggu] = await Promise.all([
+        prisma.pendaftaran_toefl.count({ where: { id_sesi: item.id_sesi, status: 'terverifikasi' } }),
+        prisma.pendaftaran_toefl.count({ where: { id_sesi: item.id_sesi, status: 'menunggu_pembayaran' } }),
+      ]);
+      return {
+        ...item,
+        jumlah_pendaftar: item._count.pendaftaran_toefl,
+        jumlah_terverifikasi: jumlahTerverifikasi,
+        jumlah_menunggu: jumlahMenunggu,
+        jumlah_tersisa: Math.max(0, item.kuota_maks - jumlahTerverifikasi),
+      };
+    }));
+    const counts = await Promise.all([
+      prisma.sesi_toefl.count(),
+      prisma.pendaftaran_toefl.count({ where: { status: 'terverifikasi' } }),
+      prisma.sesi_toefl.aggregate({ _sum: { kuota_maks: true } }),
+      prisma.sesi_toefl.count({ where: { status: { in: ['terbuka', 'ujian_dibuka', 'dijadwalkan'] } } }),
+    ]);
+    res.json({
+      data,
+      ringkasan: {
+        total_sesi: counts[0],
+        total_terverifikasi: counts[1],
+        kapasitas: counts[2]._sum.kuota_maks || 0,
+        sesi_aktif: counts[3],
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengambil data kuota TOEFL', error: error.message });
+  }
+};
+
+export const updateKuotaSesi = async (req, res) => {
   try {
     const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ message: 'ID pendaftaran tidak valid' });
-    const status = req.body.status;
-    if (!['menunggu_pembayaran', 'terverifikasi', 'dibatalkan'].includes(status)) {
-      return res.status(400).json({ message: 'Status pendaftaran tidak valid' });
+    if (!id) return res.status(400).json({ message: 'ID sesi tidak valid' });
+    const existing = await prisma.sesi_toefl.findUnique({ where: { id_sesi: id } });
+    if (!existing) return res.status(404).json({ message: 'Sesi TOEFL tidak ditemukan' });
+
+    const kuotaMin = Number(req.body.kuota_min);
+    const kuotaMaks = Number(req.body.kuota_maks);
+    if (!Number.isInteger(kuotaMin) || kuotaMin < 1 || kuotaMin > 24) return res.status(400).json({ message: 'Kuota minimum harus 1-24' });
+    if (!Number.isInteger(kuotaMaks) || kuotaMaks < kuotaMin || kuotaMaks > 24) return res.status(400).json({ message: 'Kuota maksimum harus 1-24 dan tidak boleh kurang dari minimum' });
+
+    const terverifikasi = await prisma.pendaftaran_toefl.count({ where: { id_sesi: id, status: 'terverifikasi' } });
+    if (kuotaMaks < terverifikasi) return res.status(400).json({ message: `Kuota maksimum tidak boleh kurang dari ${terverifikasi} peserta terverifikasi` });
+
+    const data = { kuota_min: kuotaMin, kuota_maks: kuotaMaks };
+    if (req.body.tanggal !== undefined) data.tanggal = req.body.tanggal ? new Date(`${req.body.tanggal}T00:00:00.000Z`) : null;
+    if (req.body.jam_mulai) data.jam_mulai = new Date(`1970-01-01T${req.body.jam_mulai}:00.000Z`);
+    if (req.body.batas_pendaftaran) data.batas_pendaftaran = new Date(req.body.batas_pendaftaran);
+    if (req.body.status) {
+      if (!['terbuka', 'menunggu_override', 'ujian_dibuka', 'dijadwalkan', 'selesai', 'dibatalkan'].includes(req.body.status)) return res.status(400).json({ message: 'Status sesi tidak valid' });
+      data.status = req.body.status;
     }
-    const pendaftaran = await prisma.pendaftaran_toefl.update({
-      where: { id_pendaftaran: id },
-      data: { status },
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.sesi_toefl.update({ where: { id_sesi: id }, data });
+      await catatAudit(tx, req, {
+        aksi: 'ubah_kuota',
+        entitas: 'sesi_toefl',
+        idEntitas: id,
+        detail: {
+          kuota_min: kuotaMin,
+          kuota_maks: kuotaMaks,
+          alasan: String(req.body.alasan_perubahan || '').trim() || null,
+        },
+      });
+      return result;
     });
-    res.json({ message: 'Status diperbarui', data: pendaftaran });
+    res.json({ message: 'Kuota sesi berhasil diperbarui', data: await getSesiResponse(updated.id_sesi) });
   } catch (error) {
-    res.status(500).json({ message: 'Gagal memperbarui status', error: error.message });
+    res.status(500).json({ message: 'Gagal memperbarui kuota', error: error.message });
+  }
+};
+
+
+export const getPendaftarSesi = async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'ID sesi tidak valid' });
+    const sesi = await prisma.sesi_toefl.findUnique({ where: { id_sesi: id } });
+    if (!sesi) return res.status(404).json({ message: 'Sesi TOEFL tidak ditemukan' });
+
+    const pendaftar = await prisma.pendaftaran_toefl.findMany({
+      where: { id_sesi: id },
+      include: {
+        pengguna: {
+          select: {
+            id_pengguna: true,
+            nama_lengkap: true,
+            nim: true,
+            email: true,
+            no_hp: true,
+            program_studi: true,
+          },
+        },
+      },
+      orderBy: { tanggal_daftar: 'asc' },
+    });
+    res.json({ data: pendaftar });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengambil daftar pendaftar sesi', error: error.message });
+  }
+};
+
+export const rilisSesiDariKuota = async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ message: 'ID sesi tidak valid' });
+    const sesi = await prisma.sesi_toefl.findUnique({ where: { id_sesi: id } });
+    if (!sesi) return res.status(404).json({ message: 'Sesi TOEFL tidak ditemukan' });
+    if (!sesi.tanggal || !sesi.jam_mulai || !sesi.jam_selesai || !sesi.ruang) {
+      return res.status(400).json({ message: 'Tanggal, jam, dan ruang ujian harus sudah dilengkapi pada Kelola Sesi TOEFL' });
+    }
+
+    const terverifikasi = await prisma.pendaftaran_toefl.count({
+      where: { id_sesi: id, status: 'terverifikasi' },
+    });
+    const kuotaEfektif = sesi.kuota_min;
+
+    if (terverifikasi < kuotaEfektif) {
+      return res.status(400).json({
+        message: `Belum memenuhi kuota minimum. Pendaftar terverifikasi ${terverifikasi}/${kuotaEfektif}`,
+      });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.sesi_toefl.update({
+        where: { id_sesi: id },
+        data: { status: 'dijadwalkan', tanggal_rilis: new Date() },
+      });
+      await catatAudit(tx, req, {
+        aksi: 'rilis',
+        entitas: 'sesi_toefl',
+        idEntitas: id,
+        detail: { nama_sesi: sesi.nama_sesi, jumlah_terverifikasi: terverifikasi, kuota_efektif: kuotaEfektif },
+      });
+      return result;
+    });
+    res.json({ message: 'Jadwal sesi TOEFL berhasil dirilis', data: updated });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal merilis jadwal sesi TOEFL', error: error.message });
   }
 };
