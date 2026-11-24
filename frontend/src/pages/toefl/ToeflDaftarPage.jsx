@@ -30,6 +30,16 @@ const formatWaktu = (value) => value
   : '-';
 
 const getBuktiUrl = (buktiPath) => {
+  return buktiPath ? '' : '';
+};
+
+const getBuktiUrlByPendaftaran = (idPendaftaran) => {
+  if (!idPendaftaran) return '';
+  const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/?$/, '');
+  return `${base}/toefl/pendaftaran/${idPendaftaran}/bukti`;
+};
+
+const getBuktiStaticUrl = (buktiPath) => {
   if (!buktiPath) return '';
   const normalized = String(buktiPath).replace(/\\/g, '/').replace(/^\/+/, '');
   const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
@@ -51,6 +61,7 @@ function ToeflDaftarPage() {
   const [submitting, setSubmitting] = useState(false);
   const [file, setFile] = useState(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState('');
+  const [storedProofUrl, setStoredProofUrl] = useState('');
   const [buktiPreview, setBuktiPreview] = useState(false);
   const [activeRegistration, setActiveRegistration] = useState(null);
 
@@ -85,7 +96,7 @@ function ToeflDaftarPage() {
         setSelectedId(owned.sesi.id_sesi);
         setSelected(owned.sesi);
         const buktiPath = owned.tagihan?.pembayaran?.bukti_path;
-        if (buktiPath) setFilePreviewUrl(getBuktiUrl(buktiPath));
+        if (buktiPath) setFilePreviewUrl(getBuktiUrlByPendaftaran(owned.id_pendaftaran));
         const paymentStatus = owned.tagihan?.pembayaran?.status;
         if (owned.status === 'terverifikasi') setStep(6);
         else if (paymentStatus === 'menunggu') setStep(5);
@@ -138,6 +149,44 @@ function ToeflDaftarPage() {
       setFilePreviewUrl('');
     }
   };
+
+  const removeProof = () => {
+    if (filePreviewUrl.startsWith('blob:')) URL.revokeObjectURL(filePreviewUrl);
+    setFile(null);
+    setFilePreviewUrl('');
+  };
+
+  useEffect(() => {
+    if (!filePreviewUrl) {
+      setStoredProofUrl('');
+      return;
+    }
+    if (filePreviewUrl.startsWith('blob:') || filePreviewUrl.startsWith('/')) {
+      setStoredProofUrl(filePreviewUrl);
+      return;
+    }
+    if (!filePreviewUrl.includes('/pendaftaran/') || !filePreviewUrl.includes('/bukti')) {
+      setStoredProofUrl(filePreviewUrl);
+      return;
+    }
+    let active = true;
+    const relativeProofUrl = filePreviewUrl.includes('/api/')
+      ? filePreviewUrl.slice(filePreviewUrl.indexOf('/api/') + 4)
+      : filePreviewUrl;
+    api.get(relativeProofUrl, { responseType: 'blob' })
+      .then((res) => {
+        if (!active) return;
+        const url = URL.createObjectURL(res.data);
+        setStoredProofUrl((old) => {
+          if (old.startsWith('blob:')) URL.revokeObjectURL(old);
+          return url;
+        });
+      })
+      .catch(() => {
+        if (active) setStoredProofUrl('');
+      });
+    return () => { active = false; };
+  }, [filePreviewUrl]);
 
   const goNext = async () => {
     if (step === 1) {
@@ -217,7 +266,6 @@ function ToeflDaftarPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       const uploaded = uploadRes.data.data;
-      const uploadedUrl = getBuktiUrl(uploaded?.bukti_path);
       setPendaftaran((old) => ({
         ...old,
         tagihan: {
@@ -231,7 +279,7 @@ function ToeflDaftarPage() {
           },
         },
       }));
-      setFilePreviewUrl(uploadedUrl || filePreviewUrl);
+      setFilePreviewUrl(getBuktiUrlByPendaftaran(pendaftaran.id_pendaftaran));
       setStep(5);
       toast.success('Bukti pembayaran berhasil diunggah');
     } catch (err) {
@@ -249,7 +297,7 @@ function ToeflDaftarPage() {
       if (owned) {
         setPendaftaran(owned);
         const buktiPath = owned.tagihan?.pembayaran?.bukti_path;
-        if (buktiPath) setFilePreviewUrl(getBuktiUrl(buktiPath));
+        if (buktiPath) setFilePreviewUrl(getBuktiUrlByPendaftaran(owned.id_pendaftaran));
         if (owned.status === 'terverifikasi') setStep(6);
         else if (owned.tagihan?.pembayaran?.status === 'ditolak') toast.error(owned.tagihan.pembayaran.catatan || 'Bukti pembayaran ditolak');
         else toast.info('Pembayaran masih menunggu verifikasi admin');
@@ -409,13 +457,18 @@ function ToeflDaftarPage() {
                   <label className="proof-drop">
                     <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" onChange={chooseProof} />
                     {filePreviewUrl ? (
-                      <img className="proof-image-preview" src={filePreviewUrl} alt="Preview bukti pembayaran" />
+                      <img className="proof-image-preview" src={storedProofUrl || filePreviewUrl} alt="Preview bukti pembayaran" />
                     ) : (
                       <Icon name={file?.type === 'application/pdf' ? 'file' : 'upload'} size={22} />
                     )}
                     <strong>{file ? file.name : 'Pilih atau jatuhkan bukti transfer'}</strong>
                     {file && <span className="proof-ready"><Icon name="checkCircle" size={14} /> Siap dikirim</span>}
                     <small>{file ? `${(file.size / 1024).toFixed(0)} KB · ` : ''}JPG, PNG, WebP, atau PDF · Maks. 5 MB</small>
+                    {file && (
+                      <button type="button" className="proof-remove-btn" onClick={(event) => { event.preventDefault(); removeProof(); }}>
+                        <Icon name="x" size={14} /> Hapus pilihan
+                      </button>
+                    )}
                   </label>
                   <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>{submitting ? 'Mengunggah...' : 'Kirim Bukti Pembayaran'}</button>
                 </form>
@@ -460,7 +513,7 @@ function ToeflDaftarPage() {
               <div className="waiting-proof">
                 <div><p className="cell-sub">Kode tagihan</p><strong>{pendaftaran?.tagihan?.kode_tagihan}</strong><p className="cell-sub">Nominal</p><strong>{formatRupiah(pendaftaran?.tagihan?.total_tagihan)}</strong></div>
                 <button type="button" className="proof-preview" onClick={() => setBuktiPreview(true)}>
-                  {filePreviewUrl ? <img className="proof-image-preview uploaded" src={filePreviewUrl} alt="Bukti pembayaran" /> : <Icon name="file" size={22} />}
+                  {storedProofUrl || filePreviewUrl ? <img className="proof-image-preview uploaded" src={storedProofUrl || filePreviewUrl} alt="Bukti pembayaran" /> : <Icon name="file" size={22} />}
                   <strong>Bukti pembayaran</strong>
                   <small>Klik untuk meninjau</small>
                 </button>
@@ -522,7 +575,7 @@ function ToeflDaftarPage() {
       {buktiPreview && (
         <Modal title="Bukti pembayaran" onClose={() => setBuktiPreview(false)} size="lg">
           {filePreviewUrl ? (
-            <img className="proof-modal-preview" src={filePreviewUrl} alt="Preview bukti pembayaran" />
+            <img className="proof-modal-preview" src={storedProofUrl || filePreviewUrl} alt="Preview bukti pembayaran" />
           ) : (
             <div className="proof-modal-empty"><Icon name="file" size={28} /><strong>{file?.name || 'Bukti pembayaran tersimpan'}</strong><p>Bukti sudah dikirim dan akan ditinjau oleh admin.</p></div>
           )}
