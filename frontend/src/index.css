@@ -3795,6 +3795,99 @@ input {
   background: var(--brand-50);
 }
 
+.notification-menu {
+  position: relative;
+}
+.notification-trigger {
+  position: relative;
+}
+.notification-count {
+  position: absolute;
+  right: -2px;
+  top: -4px;
+  min-width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+.notification-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 80;
+  width: 340px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.notification-popover header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.notification-popover header button {
+  border: 0;
+  background: transparent;
+  color: var(--brand-700);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.notification-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+.notification-list > p {
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.82rem;
+}
+.notification-list > button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  text-align: left;
+}
+.notification-list > button.unread {
+  background: var(--brand-50);
+}
+.notification-list > button span:last-child {
+  display: grid;
+  gap: 3px;
+}
+.notification-list strong {
+  font-size: 0.78rem;
+}
+.notification-list small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.notification-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent-50);
+  color: var(--accent-600);
+}
+
 @media (max-width: 900px) {
   .toefl-register-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -3841,7 +3934,75 @@ input {
   margin: 10mm;
 }
 
+.toefl-slip-print {
+  display: none;
+}
+.toefl-download-slip {
+  margin-top: 10px;
+}
+
 @media print {
+  body.printing-slip .toefl-register-layout,
+  body.printing-slip .toefl-register-hero,
+  body.printing-slip .toefl-stepper {
+    display: none !important;
+  }
+  body.printing-slip .toefl-slip-print {
+    display: block;
+    min-height: 245mm;
+    width: 100%;
+    padding: 14mm 12mm;
+    border: 1.5px solid #4b6f69;
+    border-radius: 3mm;
+  }
+  body.printing-slip .toefl-slip-print header {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--brand-700);
+  }
+  .toefl-slip-logo {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 9px;
+    background: var(--brand-700);
+    color: #fff;
+    font-size: 1.1rem;
+  }
+  .toefl-slip-print header div:nth-child(2) {
+    display: grid;
+  }
+  .toefl-slip-print header > span {
+    color: var(--brand-800);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+  .toefl-slip-print dl {
+    display: grid;
+    gap: 7px;
+    margin: 12mm 0 8mm;
+  }
+  .toefl-slip-print dl div {
+    display: grid;
+    grid-template-columns: 155px minmax(0, 1fr);
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .toefl-slip-bank {
+    display: grid;
+    gap: 5px;
+    padding: 10px 12px;
+    background: var(--brand-50);
+  }
+  .toefl-slip-print footer {
+    margin-top: 12mm;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
   html,
   body,
   #root,
