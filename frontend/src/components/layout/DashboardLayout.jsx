@@ -60,9 +60,18 @@ function DashboardLayout() {
       ));
     }
     setNotificationOpen(false);
-    navigate(item.jenis === 'pembayaran_toefl' || item.judul?.includes('verifikasi') || item.judul?.includes('pembayaran')
-      ? '/dashboard/mahasiswa/toefl?mode=lanjut'
-      : '/dashboard/mahasiswa');
+    const isPaymentNotification = item.jenis === 'pembayaran_toefl'
+      || item.jenis === 'pembayaran'
+      || item.judul?.includes('verifikasi')
+      || item.judul?.includes('pembayaran');
+    const isAdmin = user?.role === 'staf_upt';
+    let target = '/dashboard/mahasiswa';
+    if (item.jenis === 'pembayaran_toefl') {
+      target = isAdmin ? '/dashboard/admin/toefl/pembayaran' : '/dashboard/mahasiswa/toefl?mode=lanjut';
+    } else if (isPaymentNotification && isAdmin) {
+      target = '/dashboard/admin/pembayaran';
+    }
+    navigate(target);
   };
 
   const markAllRead = async () => {

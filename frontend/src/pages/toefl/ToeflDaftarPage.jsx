@@ -342,6 +342,7 @@ function ToeflDaftarPage() {
     : Number(currentSession?.biaya || currentSession?.tarif || 0);
   const uniqueCode = pendaftaran?.tagihan?.kode_tagihan?.slice(-4) || '123';
   const uniquePayment = uniqueAmount + Number(uniqueCode) / 1000;
+  const buktiDitolak = pendaftaran?.tagihan?.pembayaran?.status === 'ditolak';
 
   if (loading) return <div className="toefl-register-page"><p className="table-message">Memuat pendaftaran TOEFL...</p></div>;
 
@@ -464,13 +465,18 @@ function ToeflDaftarPage() {
           <section className="panel toefl-register-main">
             <header className="panel-head"><div><h2 className="panel-title">Rincian tagihan</h2><p className="panel-sub">Selesaikan pembayaran sebelum batas yang ditentukan.</p></div></header>
             <div className="panel-body">
-              {pendaftaran?.tagihan?.pembayaran?.status === 'ditolak' && (
+              {buktiDitolak && (
                 <div className="alert alert-danger" role="alert">
                   <Icon name="alert" size={18} />
                   <div>
                     <strong>Bukti pembayaran perlu diperbaiki</strong>
                     <p>{pendaftaran.tagihan.pembayaran.catatan || 'Bukti pembayaran ditolak. Silakan unggah ulang bukti yang benar.'}</p>
-                    <small>Perbaiki sesuai catatan Staf UPT, lalu unggah ulang bukti pembayaran di bawah ini.</small>
+                    <small>Perbaiki sesuai catatan Staf UPT, lalu unggah bukti pengganti melalui formulir yang sama.</small>
+                    <div className="toefl-reupload-action">
+                      <a className="btn btn-primary btn-sm" href="#toefl-proof-upload">
+                        Unggah Ulang Bukti Pembayaran
+                      </a>
+                    </div>
                   </div>
                 </div>
               )}
@@ -484,8 +490,9 @@ function ToeflDaftarPage() {
                     <Icon name="download" size={17} /> Unduh Slip Tagihan PDF
                   </button>
                 </div>
-                <form className="proof-upload" onSubmit={uploadProof}>
-                  <h3>Unggah bukti pembayaran</h3>
+                <form id="toefl-proof-upload" className="proof-upload" onSubmit={uploadProof}>
+                  <h3>{buktiDitolak ? 'Unggah ulang bukti pembayaran' : 'Unggah bukti pembayaran'}</h3>
+                  {buktiDitolak && <p className="cell-sub">Pilih bukti pengganti di sini. Bukti baru akan dikirim untuk divalidasi kembali.</p>}
                   <label className="proof-drop">
                     <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" onChange={chooseProof} />
                     {filePreviewUrl ? (
@@ -502,7 +509,9 @@ function ToeflDaftarPage() {
                       </button>
                     )}
                   </label>
-                  <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>{submitting ? 'Mengunggah...' : 'Kirim Bukti Pembayaran'}</button>
+                  <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+                    {submitting ? 'Mengunggah...' : buktiDitolak ? 'Unggah Ulang Bukti Pembayaran' : 'Kirim Bukti Pembayaran'}
+                  </button>
                 </form>
               </div>
             </div>

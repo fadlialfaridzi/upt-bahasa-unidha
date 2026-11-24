@@ -3043,6 +3043,9 @@ input {
   border: 1px solid #f0c4c4;
   color: #8f2a2a;
 }
+.toefl-reupload-action {
+  margin-top: 8px;
+}
 .alert-success {
   background: var(--success-50);
   border: 1px solid #bfe0cc;
