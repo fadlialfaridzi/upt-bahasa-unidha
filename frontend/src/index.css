@@ -3531,6 +3531,741 @@ input {
   to { transform: scale(1); opacity: 1; }
 }
 
+/* ---------- Pendaftaran TOEFL peserta (#8) ---------- */
+.toefl-register-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-bottom: 24px;
+}
+.toefl-register-hero {
+  min-height: 118px;
+  display: grid;
+  align-content: center;
+  padding: 24px 28px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #456d68, #557e79);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+.toefl-register-hero p {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  opacity: 0.86;
+}
+.toefl-register-hero h1 {
+  margin-top: 5px;
+  font-size: 1.75rem;
+}
+.toefl-register-hero span {
+  font-size: 0.78rem;
+  opacity: 0.86;
+}
+.toefl-stepper {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+  padding: 18px 0 12px;
+  border-radius: var(--radius);
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.toefl-step {
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 10px;
+  border-top: 3px solid var(--line);
+  color: var(--muted);
+}
+.toefl-step > span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: -13px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--line);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.toefl-step small {
+  width: 100%;
+  font-size: 0.72rem;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toefl-step.done,
+.toefl-step.active {
+  border-top-color: var(--brand-700);
+  color: var(--brand-800);
+}
+.toefl-step.done > span,
+.toefl-step.active > span {
+  background: var(--brand-700);
+}
+.toefl-register-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
+}
+.toefl-register-main {
+  min-width: 0;
+}
+.toefl-register-side {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 16px;
+}
+.toefl-register-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.toefl-consent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-50);
+  color: var(--brand-800);
+  font-size: 0.78rem;
+}
+.toefl-session-list {
+  display: grid;
+  gap: 10px;
+}
+.toefl-session-card {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  text-align: left;
+  color: var(--ink);
+}
+.toefl-session-card.active {
+  border: 2px solid var(--brand-700);
+  background: var(--brand-50);
+}
+.radio-dot {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #aab9b5;
+  border-radius: 50%;
+}
+.toefl-session-card.active .radio-dot {
+  border: 4px solid var(--brand-700);
+  background: #fff;
+}
+.session-card-main,
+.session-card-amount {
+  display: grid;
+  gap: 4px;
+}
+.session-card-main small,
+.session-card-amount small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.confirm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.confirm-grid h3 {
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: var(--brand-900);
+}
+.confirm-grid dl,
+.summary-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.confirm-grid dl div,
+.summary-rows div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+.confirm-grid dt,
+.summary-rows dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.confirm-grid dd,
+.summary-rows dd {
+  text-align: right;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.payment-layout {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 16px;
+}
+.unique-amount {
+  margin: 12px 0 4px;
+  color: var(--brand-900);
+  font-size: 1.8rem;
+}
+.bank-box {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: #f7faf9;
+  border: 1px solid var(--line);
+}
+.bank-box strong {
+  font-size: 1.12rem;
+  letter-spacing: 0.04em;
+}
+.bank-box p,
+.bank-box small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+.proof-upload {
+  display: grid;
+  gap: 10px;
+}
+.proof-drop {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-height: 150px;
+  align-content: center;
+  border: 1.5px dashed #83a09a;
+  border-radius: var(--radius);
+  background: #f8fbfa;
+  color: var(--brand-800);
+  text-align: center;
+  cursor: pointer;
+}
+.proof-drop input {
+  position: absolute;
+  opacity: 0;
+}
+.proof-drop small {
+  color: var(--muted);
+}
+.waiting-proof {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 12px;
+  margin: 16px 0;
+}
+.proof-preview {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  min-height: 120px;
+  border: 1.5px dashed #83a09a;
+  border-radius: var(--radius);
+  background: #f8fbfa;
+  color: var(--brand-800);
+}
+.proof-preview small {
+  color: var(--muted);
+}
+.proof-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.proof-image-preview {
+  width: 100%;
+  max-height: 112px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.proof-image-preview.uploaded {
+  max-height: 82px;
+}
+.proof-modal-preview {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: var(--radius);
+  background: #f7faf9;
+}
+.proof-modal-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 180px;
+  align-content: center;
+  text-align: center;
+  color: var(--brand-800);
+}
+.proof-modal-empty p {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.proof-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border: 1px solid #f0b3b3;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--danger);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.proof-drop:has(.proof-remove-btn) {
+  min-height: 180px;
+  padding: 12px;
+}
+.toefl-next {
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.exam-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  margin-bottom: 12px;
+}
+.exam-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 18px;
+}
+.exam-card-head div {
+  display: grid;
+}
+.exam-card-head small {
+  color: var(--muted);
+}
+.exam-card dl {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+.exam-card dl div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 7px;
+}
+.exam-card dt {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.exam-card dd {
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+/* Kartu ujian cetak satu halaman */
+.exam-card-brand {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--brand-700);
+}
+.exam-card-logo {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  background: var(--brand-700);
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+.exam-card-brand div:nth-child(2) {
+  display: grid;
+}
+.exam-card-brand div:nth-child(2) strong {
+  color: var(--brand-900);
+  font-size: 0.92rem;
+}
+.exam-card-brand div:nth-child(2) small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.exam-card-brand > span {
+  color: var(--brand-800);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.exam-card-status {
+  width: fit-content;
+  margin: 12px 0 9px auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--success-50);
+  color: var(--success);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.exam-card-print dl {
+  gap: 5px;
+}
+.exam-card-print dl div {
+  grid-template-columns: 155px minmax(0, 1fr);
+  min-height: 29px;
+  align-items: center;
+  padding: 4px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+.exam-card-print dt,
+.exam-card-print dd {
+  font-size: 0.76rem;
+}
+.exam-card-rules {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: var(--brand-50);
+  color: var(--ink-2);
+  font-size: 0.68rem;
+}
+.exam-card-rules ul {
+  margin: 4px 0 0 18px;
+  line-height: 1.45;
+}
+.exam-card-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+.exam-card-footer strong {
+  color: var(--brand-800);
+}
+
+.toefl-active-registration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #bdd1cb;
+  border-radius: var(--radius);
+  background: var(--brand-50);
+}
+
+.notification-menu {
+  position: relative;
+}
+.notification-trigger {
+  position: relative;
+}
+.notification-count {
+  position: absolute;
+  right: -2px;
+  top: -4px;
+  min-width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+.notification-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 80;
+  width: 340px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.notification-popover header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.notification-popover header button {
+  border: 0;
+  background: transparent;
+  color: var(--brand-700);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.notification-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+.notification-list > p {
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.82rem;
+}
+.notification-list > button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  text-align: left;
+}
+.notification-list > button.unread {
+  background: var(--brand-50);
+}
+.notification-list > button span:last-child {
+  display: grid;
+  gap: 3px;
+}
+.notification-list strong {
+  font-size: 0.78rem;
+}
+.notification-list small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.notification-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent-50);
+  color: var(--accent-600);
+}
+
+@media (max-width: 900px) {
+  .toefl-register-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .toefl-register-side {
+    position: static;
+  }
+  .toefl-step small {
+    font-size: 0.62rem;
+  }
+}
+@media (max-width: 600px) {
+  .toefl-register-hero {
+    min-height: 100px;
+    padding: 20px;
+  }
+  .toefl-register-hero h1 {
+    font-size: 1.35rem;
+  }
+  .toefl-stepper {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .toefl-register-actions,
+  .confirm-grid,
+  .payment-layout,
+  .waiting-proof {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .toefl-session-card {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+  .session-card-amount {
+    grid-column: 2;
+  }
+  .confirm-grid dl div,
+  .summary-rows div,
+  .exam-card dl div {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+.toefl-slip-print {
+  display: none;
+}
+.toefl-download-slip {
+  margin-top: 10px;
+}
+
+@media print {
+  body.printing-slip .toefl-register-layout,
+  body.printing-slip .toefl-register-hero,
+  body.printing-slip .toefl-stepper {
+    display: none !important;
+  }
+  body.printing-slip .toefl-slip-print {
+    display: block;
+    min-height: 245mm;
+    width: 100%;
+    padding: 14mm 12mm;
+    border: 1.5px solid #4b6f69;
+    border-radius: 3mm;
+  }
+  body.printing-slip .toefl-slip-print header {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--brand-700);
+  }
+  .toefl-slip-logo {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 9px;
+    background: var(--brand-700);
+    color: #fff;
+    font-size: 1.1rem;
+  }
+  .toefl-slip-print header div:nth-child(2) {
+    display: grid;
+  }
+  .toefl-slip-print header > span {
+    color: var(--brand-800);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+  .toefl-slip-print dl {
+    display: grid;
+    gap: 7px;
+    margin: 12mm 0 8mm;
+  }
+  .toefl-slip-print dl div {
+    display: grid;
+    grid-template-columns: 155px minmax(0, 1fr);
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .toefl-slip-bank {
+    display: grid;
+    gap: 5px;
+    padding: 10px 12px;
+    background: var(--brand-50);
+  }
+  .toefl-slip-print footer {
+    margin-top: 12mm;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  html,
+  body,
+  #root,
+  .dash-shell,
+  .dash-main,
+  .dash-content {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .sidebar,
+  .topbar,
+  .toefl-register-hero,
+  .toefl-stepper,
+  .toefl-register-side,
+  .exam-screen-heading,
+  .exam-screen-actions,
+  .back-link,
+  .toast-container {
+    display: none !important;
+  }
+  .toefl-register-page,
+  .toefl-register-layout,
+  .toefl-register-main,
+  .panel-body.exam-print-root {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .toefl-register-main {
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .exam-card-print {
+    break-inside: avoid;
+    width: 100%;
+    min-height: 245mm;
+    margin: 0;
+    padding: 14mm 12mm;
+    border: 1.5px solid #4b6f69;
+    border-radius: 3mm;
+  }
+  .exam-card-print dl {
+    margin-top: 3mm;
+  }
+  .exam-card-print dl div {
+    min-height: 9mm;
+  }
+  .exam-card-rules {
+    margin-top: 5mm;
+  }
+  .exam-card-footer {
+    position: absolute;
+    left: 12mm;
+    right: 12mm;
+    bottom: 12mm;
+  }
+}
+
 /* ---------- Kelola kuota TOEFL (#33) ---------- */
 .notice-warning {
   margin-bottom: 16px;

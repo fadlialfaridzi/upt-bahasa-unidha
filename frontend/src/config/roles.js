@@ -51,7 +51,7 @@ export const DASHBOARDS = {
     label: 'Mahasiswa',
     menu: [
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/mahasiswa' },
-      { label: 'Tes TOEFL', icon: 'graduation' },
+      { label: 'Tes TOEFL', icon: 'graduation', path: '/dashboard/mahasiswa/toefl' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/mahasiswa/pelatihan' },
       { label: 'Penerjemahan', icon: 'languages' },
       { label: 'Tagihan', icon: 'wallet', path: '/dashboard/mahasiswa/pelatihan?tab=tagihan' },

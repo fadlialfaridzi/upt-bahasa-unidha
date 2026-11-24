@@ -1,22 +1,13 @@
 import { Router } from 'express';
 import {
-  getAllJadwal,
-  getJadwalById,
-  getAllSesi,
-  getSesiById,
-  createSesi,
-  updateSesi,
-  rilisSesi,
-  deleteSesi,
-  daftarTes,
-  getMyPendaftaran,
-  updateStatusPendaftaran,
-  getKuotaToefl,
-  updateKuotaSesi,
-  getPendaftarSesi,
-  rilisSesiDariKuota,
+  getAllJadwal, getJadwalById, daftarTes, getMyPendaftaran,
+  uploadBuktiToefl, updateStatusPendaftaran,
+  getBuktiToefl,
+  getAllSesi, getSesiById, createSesi, updateSesi, rilisSesi, deleteSesi,
+  getKuotaToefl, updateKuotaSesi, getPendaftarSesi, rilisSesiDariKuota,
 } from '../controllers/toefl.controller.js';
 import { authenticate, authorizeAdmin } from '../middlewares/auth.middleware.js';
+import { uploadBukti } from '../middlewares/upload.middleware.js';
 
 const router = Router();
 
@@ -24,17 +15,18 @@ const router = Router();
 router.get('/jadwal', getAllJadwal);
 router.get('/jadwal/:id', getJadwalById);
 
-// Peserta
+// User - butuh login
 router.post('/daftar', authenticate, daftarTes);
 router.get('/my-pendaftaran', authenticate, getMyPendaftaran);
-router.patch('/pendaftaran/:id/status', authenticate, authorizeAdmin, updateStatusPendaftaran);
+router.post('/pembayaran/upload', authenticate, uploadBukti.single('bukti'), uploadBuktiToefl);
+router.get('/pendaftaran/:id/bukti', authenticate, getBuktiToefl);
 
-// Admin - Kelola kuota peserta TOEFL (#33)
+// Admin only
+router.patch('/pendaftaran/:id/status', authenticate, authorizeAdmin, updateStatusPendaftaran);
 router.get('/kuota', authenticate, authorizeAdmin, getKuotaToefl);
 router.put('/sesi/:id/kuota', authenticate, authorizeAdmin, updateKuotaSesi);
 router.get('/sesi/:id/pendaftar', authenticate, authorizeAdmin, getPendaftarSesi);
-router.post('/sesi/:id/rilis', authenticate, authorizeAdmin, rilisSesiDariKuota);
-// Admin - Kelola sesi TOEFL (#60)
+router.post('/sesi/:id/rilis-kuota', authenticate, authorizeAdmin, rilisSesiDariKuota);
 router.get('/sesi', authenticate, authorizeAdmin, getAllSesi);
 router.get('/sesi/:id', authenticate, authorizeAdmin, getSesiById);
 router.post('/sesi', authenticate, authorizeAdmin, createSesi);
