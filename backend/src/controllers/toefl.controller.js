@@ -332,6 +332,42 @@ export const getMyPendaftaran = async (req, res) => {
   }
 };
 
+export const getTagihanToeflPeserta = async (req, res) => {
+  try {
+    const pendaftaran = await prisma.pendaftaran_toefl.findMany({
+      where: {
+        id_pengguna: req.user.id,
+        status: { not: 'dibatalkan' },
+      },
+      include: includePendaftaran,
+      orderBy: { tanggal_daftar: 'desc' },
+    });
+
+    const parameter = await prisma.parameter_sistem.findMany({
+      where: {
+        kunci: { in: ['bank_tujuan', 'no_rekening_tujuan', 'atas_nama_rekening', 'batas_bayar_hari'] },
+      },
+    });
+    const rekening = Object.fromEntries(parameter.map((item) => [item.kunci, item.nilai]));
+
+    const data = pendaftaran.map((item) => {
+      const serialized = serializePendaftaran(item);
+      return {
+        ...serialized,
+        rekening: {
+          bank: rekening.bank_tujuan || 'Bank Nagari Syariah',
+          nomor_rekening: rekening.no_rekening_tujuan || 'Belum dikonfigurasi',
+          atas_nama: rekening.atas_nama_rekening || 'UPT Bahasa UNIDHA',
+        },
+      };
+    });
+
+    res.json({ data });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengambil tagihan TOEFL', error: error.message });
+  }
+};
+
 export const getBuktiToefl = async (req, res) => {
   try {
     const idPendaftaran = parseId(req.params.id);
@@ -356,27 +392,60 @@ export const getBuktiToefl = async (req, res) => {
 };
 
 export const uploadBuktiToefl = async (req, res) => {
+  const hapusBerkasUnggahan = async () => {
+    if (!req.file?.path) return;
+    try {
+      await fs.promises.unlink(req.file.path);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  };
+
   try {
     if (!req.file) return res.status(400).json({ message: 'Bukti pembayaran wajib diunggah' });
     const idPendaftaran = parseId(req.body.id_pendaftaran);
-    if (!idPendaftaran) return res.status(400).json({ message: 'Pendaftaran TOEFL tidak valid' });
+    if (!idPendaftaran) {
+      await hapusBerkasUnggahan();
+      return res.status(400).json({ message: 'Pendaftaran TOEFL tidak valid' });
+    }
     const pendaftaran = await prisma.pendaftaran_toefl.findFirst({
       where: { id_pendaftaran: idPendaftaran, id_pengguna: req.user.id },
       include: { tagihan: true, sesi_toefl: true },
     });
-    if (!pendaftaran?.tagihan) return res.status(404).json({ message: 'Tagihan pendaftaran tidak ditemukan' });
-    if (pendaftaran.status === 'dibatalkan') return res.status(400).json({ message: 'Pendaftaran telah dibatalkan' });
+    if (!pendaftaran?.tagihan) {
+      await hapusBerkasUnggahan();
+      return res.status(404).json({ message: 'Tagihan pendaftaran tidak ditemukan' });
+    }
+    if (pendaftaran.status === 'dibatalkan' || ['dibatalkan', 'kedaluwarsa', 'lunas'].includes(pendaftaran.tagihan.status)) {
+      await hapusBerkasUnggahan();
+      return res.status(400).json({ message: 'Tagihan ini tidak dapat menerima bukti pembayaran' });
+    }
 
     const buktiPath = req.file.path.replace(/\\/g, '/');
     const pembayaran = await prisma.$transaction(async (tx) => {
       const lama = await tx.pembayaran.findFirst({
         where: { id_tagihan: pendaftaran.tagihan.id_tagihan, id_cicilan: null },
       });
+      if (lama && lama.status !== 'ditolak') {
+        throw Object.assign(
+          new Error(lama.status === 'menunggu'
+            ? 'Bukti pembayaran masih menunggu verifikasi'
+            : 'Pembayaran telah terverifikasi'),
+          { status: 409 },
+        );
+      }
       const nominal = Number(pendaftaran.tagihan.total_tagihan);
       const result = lama
         ? await tx.pembayaran.update({
             where: { id_pembayaran: lama.id_pembayaran },
-            data: { bukti_path: buktiPath, tanggal_unggah: new Date(), nominal, status: 'menunggu' },
+            data: {
+              bukti_path: buktiPath,
+              tanggal_unggah: new Date(),
+              nominal,
+              status: 'menunggu',
+              tanggal_verifikasi: null,
+              catatan: null,
+            },
           })
         : await tx.pembayaran.create({
             data: {
@@ -412,6 +481,12 @@ export const uploadBuktiToefl = async (req, res) => {
       data: pembayaran,
     });
   } catch (error) {
+    try {
+      await hapusBerkasUnggahan();
+    } catch (cleanupError) {
+      console.error('Gagal menghapus berkas bukti TOEFL yang tidak tersimpan:', cleanupError);
+    }
+    if (error.status) return res.status(error.status).json({ message: error.message });
     res.status(500).json({ message: 'Gagal mengunggah bukti pembayaran', error: error.message });
   }
 };
