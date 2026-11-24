@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getAllJadwal, getJadwalById, daftarTes, getMyPendaftaran,
+  getTagihanToeflPeserta,
   uploadBuktiToefl, updateStatusPendaftaran,
   getBuktiToefl,
   getAllSesi, getSesiById, createSesi, updateSesi, rilisSesi, deleteSesi,
@@ -18,6 +19,7 @@ router.get('/jadwal/:id', getJadwalById);
 // User - butuh login
 router.post('/daftar', authenticate, daftarTes);
 router.get('/my-pendaftaran', authenticate, getMyPendaftaran);
+router.get('/tagihan', authenticate, getTagihanToeflPeserta);
 router.post('/pembayaran/upload', authenticate, uploadBukti.single('bukti'), uploadBuktiToefl);
 router.get('/pendaftaran/:id/bukti', authenticate, getBuktiToefl);
 
