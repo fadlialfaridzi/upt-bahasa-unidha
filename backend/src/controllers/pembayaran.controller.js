@@ -8,6 +8,7 @@ import { catatAudit } from '../utils/audit.js';
 import { fmtTanggal } from '../utils/waktu.js';
 
 const STATUS = ['menunggu', 'terverifikasi', 'ditolak'];
+const JENIS_LAYANAN = ['toefl', 'pelatihan', 'penerjemahan'];
 const MAKS_CATATAN = 200;
 const UPLOAD_DIR = path.resolve('uploads');
 
@@ -96,27 +97,32 @@ const toResponse = (p) => {
 export const getDaftarPembayaran = async (req, res) => {
   try {
     const status = STATUS.includes(req.query.status) ? req.query.status : 'menunggu';
+    const jenisLayanan = JENIS_LAYANAN.includes(req.query.jenis_layanan) ? req.query.jenis_layanan : null;
     const q = String(req.query.q ?? '').trim();
-    const cari = q
-      ? {
-          OR: [
-            { tagihan: { kode_tagihan: { contains: q, mode: 'insensitive' } } },
-            { tagihan: { pendaftaran_pelatihan: { pengguna: { nama_lengkap: { contains: q, mode: 'insensitive' } } } } },
-            { tagihan: { pendaftaran_pelatihan: { kelas_pelatihan: { nama_kelas: { contains: q, mode: 'insensitive' } } } } },
-            { tagihan: { pendaftaran_toefl: { pengguna: { nama_lengkap: { contains: q, mode: 'insensitive' } } } } },
-          ],
-        }
-      : {};
+    const filters = [];
+    if (q) {
+      filters.push({
+        OR: [
+          { tagihan: { kode_tagihan: { contains: q, mode: 'insensitive' } } },
+          { tagihan: { pendaftaran_pelatihan: { pengguna: { nama_lengkap: { contains: q, mode: 'insensitive' } } } } },
+          { tagihan: { pendaftaran_pelatihan: { kelas_pelatihan: { nama_kelas: { contains: q, mode: 'insensitive' } } } } },
+          { tagihan: { pendaftaran_toefl: { pengguna: { nama_lengkap: { contains: q, mode: 'insensitive' } } } } },
+        ],
+      });
+    }
+    if (jenisLayanan) filters.push({ tagihan: { jenis_layanan: jenisLayanan } });
+    const where = { status, ...(filters.length ? { AND: filters } : {}) };
+    const whereSummary = jenisLayanan ? { tagihan: { jenis_layanan: jenisLayanan } } : {};
 
     const [list, jumlah] = await Promise.all([
       prisma.pembayaran.findMany({
-        where: { status, ...cari },
+        where,
         include: includePembayaran,
         // Menunggu: yang paling lama mengantre lebih dulu; lainnya: keputusan terbaru lebih dulu
         orderBy: status === 'menunggu' ? { tanggal_unggah: 'asc' } : { tanggal_verifikasi: 'desc' },
         take: 200,
       }),
-      prisma.pembayaran.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.pembayaran.groupBy({ by: ['status'], where: whereSummary, _count: { _all: true } }),
     ]);
 
     const hitung = Object.fromEntries(STATUS.map((s) => [s, 0]));
@@ -210,15 +216,23 @@ export const verifikasiPembayaran = async (req, res) => {
       const sumber = sumberTagihan(t);
       const bagian = p.cicilan ? `cicilan ke-${p.cicilan.cicilan_ke} ` : '';
       if (sumber.pengguna) {
+        const pembayaranToefl = Boolean(t.pendaftaran_toefl);
+        const judul = pembayaranToefl
+          ? keputusan === 'terima' ? 'Pendaftaran TOEFL terverifikasi' : 'Pembayaran TOEFL ditolak'
+          : keputusan === 'terima' ? 'Pembayaran diterima' : 'Pembayaran ditolak';
+        const pesan = keputusan === 'terima'
+          ? pembayaranToefl
+            ? `Pembayaran TOEFL (${t.kode_tagihan}) telah diterima. Pendaftaran Anda terverifikasi; buka menu Tes TOEFL untuk mengunduh kartu peserta.`
+            : `Pembayaran ${bagian}untuk ${sumber.nama_layanan} (${t.kode_tagihan}) telah diverifikasi.`
+          : pembayaranToefl
+            ? `Bukti pembayaran TOEFL (${t.kode_tagihan}) ditolak: ${catatan}. Perbaiki lalu unggah ulang bukti pembayaran.`
+            : `Bukti pembayaran ${bagian}untuk ${sumber.nama_layanan} (${t.kode_tagihan}) ditolak: ${catatan}. Silakan unggah ulang.`;
         await tx.notifikasi.create({
           data: {
             id_pengguna: sumber.pengguna.id_pengguna,
-            jenis: 'pembayaran',
-            judul: keputusan === 'terima' ? 'Pembayaran diterima' : 'Pembayaran ditolak',
-            pesan: (keputusan === 'terima'
-              ? `Pembayaran ${bagian}untuk ${sumber.nama_layanan} (${t.kode_tagihan}) telah diverifikasi.`
-              : `Bukti pembayaran ${bagian}untuk ${sumber.nama_layanan} ditolak: ${catatan}. Silakan unggah ulang.`
-            ).slice(0, 255),
+            jenis: pembayaranToefl ? 'pembayaran_toefl' : 'pembayaran',
+            judul,
+            pesan: pesan.slice(0, 255),
           },
         });
       }
