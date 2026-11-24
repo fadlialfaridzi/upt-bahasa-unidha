@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api.js';
@@ -276,6 +276,8 @@ function ToeflDaftarPage() {
             nominal: old.tagihan.total_tagihan,
             bukti_path: uploaded?.bukti_path,
             tanggal_unggah: uploaded?.tanggal_unggah,
+            tanggal_verifikasi: null,
+            catatan: null,
           },
         },
       }));
@@ -289,8 +291,9 @@ function ToeflDaftarPage() {
     }
   };
 
-  const refreshStatus = async () => {
-    setSubmitting(true);
+  const refreshStatus = useCallback(async (silent = false) => {
+    if (!pendaftaran?.id_pendaftaran) return;
+    if (!silent) setSubmitting(true);
     try {
       const res = await api.get('/toefl/my-pendaftaran');
       const owned = (res.data.data || []).find((item) => item.id_pendaftaran === pendaftaran?.id_pendaftaran);
@@ -298,16 +301,35 @@ function ToeflDaftarPage() {
         setPendaftaran(owned);
         const buktiPath = owned.tagihan?.pembayaran?.bukti_path;
         if (buktiPath) setFilePreviewUrl(getBuktiUrlByPendaftaran(owned.id_pendaftaran));
-        if (owned.status === 'terverifikasi') setStep(6);
-        else if (owned.tagihan?.pembayaran?.status === 'ditolak') toast.error(owned.tagihan.pembayaran.catatan || 'Bukti pembayaran ditolak');
-        else toast.info('Pembayaran masih menunggu verifikasi admin');
+        if (owned.status === 'terverifikasi') {
+          setStep(6);
+          if (pendaftaran.status !== 'terverifikasi') {
+            toast.success('Pembayaran terverifikasi. Kartu peserta TOEFL sudah tersedia.');
+          }
+        } else if (owned.tagihan?.pembayaran?.status === 'ditolak') {
+          setStep(4);
+          if (pendaftaran.tagihan?.pembayaran?.status !== 'ditolak') {
+            toast.error(owned.tagihan.pembayaran.catatan || 'Bukti pembayaran ditolak. Silakan unggah ulang.');
+          }
+        } else if (!silent) {
+          toast.info('Pembayaran masih menunggu verifikasi admin');
+        }
+      } else if (!silent) {
+        toast.error('Data pendaftaran TOEFL tidak ditemukan');
       }
-    } catch {
-      toast.error('Gagal memeriksa status pendaftaran');
+    } catch (error) {
+      if (silent) console.error('Gagal memperbarui status pendaftaran TOEFL:', error);
+      else toast.error('Gagal memeriksa status pendaftaran');
     } finally {
-      setSubmitting(false);
+      if (!silent) setSubmitting(false);
     }
-  };
+  }, [pendaftaran?.id_pendaftaran, pendaftaran?.status, pendaftaran?.tagihan?.pembayaran?.status]);
+
+  useEffect(() => {
+    if (step !== 5 || pendaftaran?.tagihan?.pembayaran?.status !== 'menunggu') return undefined;
+    const interval = window.setInterval(() => refreshStatus(true), 15000);
+    return () => window.clearInterval(interval);
+  }, [step, pendaftaran?.id_pendaftaran, pendaftaran?.tagihan?.pembayaran?.status, refreshStatus]);
 
   const printSlip = () => {
     document.body.classList.add('printing-slip');
@@ -320,6 +342,7 @@ function ToeflDaftarPage() {
     : Number(currentSession?.biaya || currentSession?.tarif || 0);
   const uniqueCode = pendaftaran?.tagihan?.kode_tagihan?.slice(-4) || '123';
   const uniquePayment = uniqueAmount + Number(uniqueCode) / 1000;
+  const buktiDitolak = pendaftaran?.tagihan?.pembayaran?.status === 'ditolak';
 
   if (loading) return <div className="toefl-register-page"><p className="table-message">Memuat pendaftaran TOEFL...</p></div>;
 
@@ -442,6 +465,21 @@ function ToeflDaftarPage() {
           <section className="panel toefl-register-main">
             <header className="panel-head"><div><h2 className="panel-title">Rincian tagihan</h2><p className="panel-sub">Selesaikan pembayaran sebelum batas yang ditentukan.</p></div></header>
             <div className="panel-body">
+              {buktiDitolak && (
+                <div className="alert alert-danger" role="alert">
+                  <Icon name="alert" size={18} />
+                  <div>
+                    <strong>Bukti pembayaran perlu diperbaiki</strong>
+                    <p>{pendaftaran.tagihan.pembayaran.catatan || 'Bukti pembayaran ditolak. Silakan unggah ulang bukti yang benar.'}</p>
+                    <small>Perbaiki sesuai catatan Staf UPT, lalu unggah bukti pengganti melalui formulir yang sama.</small>
+                    <div className="toefl-reupload-action">
+                      <a className="btn btn-primary btn-sm" href="#toefl-proof-upload">
+                        Unggah Ulang Bukti Pembayaran
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="payment-layout">
                 <div>
                   <p className="cell-sub">Kode tagihan</p><strong>{pendaftaran?.tagihan?.kode_tagihan || '-'}</strong>
@@ -452,8 +490,9 @@ function ToeflDaftarPage() {
                     <Icon name="download" size={17} /> Unduh Slip Tagihan PDF
                   </button>
                 </div>
-                <form className="proof-upload" onSubmit={uploadProof}>
-                  <h3>Unggah bukti pembayaran</h3>
+                <form id="toefl-proof-upload" className="proof-upload" onSubmit={uploadProof}>
+                  <h3>{buktiDitolak ? 'Unggah ulang bukti pembayaran' : 'Unggah bukti pembayaran'}</h3>
+                  {buktiDitolak && <p className="cell-sub">Pilih bukti pengganti di sini. Bukti baru akan dikirim untuk divalidasi kembali.</p>}
                   <label className="proof-drop">
                     <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" onChange={chooseProof} />
                     {filePreviewUrl ? (
@@ -470,7 +509,9 @@ function ToeflDaftarPage() {
                       </button>
                     )}
                   </label>
-                  <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>{submitting ? 'Mengunggah...' : 'Kirim Bukti Pembayaran'}</button>
+                  <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+                    {submitting ? 'Mengunggah...' : buktiDitolak ? 'Unggah Ulang Bukti Pembayaran' : 'Kirim Bukti Pembayaran'}
+                  </button>
                 </form>
               </div>
             </div>
@@ -528,7 +569,7 @@ function ToeflDaftarPage() {
       {step === 6 && (
         <div className="toefl-register-layout">
           <section className="panel toefl-register-main">
-            <header className="panel-head exam-screen-heading"><div><h2 className="panel-title">Pendaftaran Anda terverifikasi</h2><p className="panel-sub">Simpan kartu peserta ini dan bawa pada hari ujian.</p></div></header>
+            <header className="panel-head exam-screen-heading"><div><h2 className="panel-title">Pendaftaran Anda terverifikasi</h2><p className="panel-sub">Unduh bukti pendaftaran sebagai kartu peserta, lalu bawa saat hari ujian.</p></div></header>
             <div className="panel-body exam-print-root">
               <div className="exam-card exam-card-print">
                 <div className="exam-card-brand">
@@ -560,7 +601,7 @@ function ToeflDaftarPage() {
                   <strong>Hadir tepat waktu</strong>
                 </footer>
               </div>
-              <button type="button" className="btn btn-primary btn-block exam-screen-actions" onClick={() => window.print()}><Icon name="download" size={17} /> Unduh / Cetak PDF Kartu Ujian</button>
+              <button type="button" className="btn btn-primary btn-block exam-screen-actions" onClick={() => window.print()}><Icon name="download" size={17} /> Unduh Bukti Pendaftaran / Kartu Ujian PDF</button>
               <button type="button" className="btn btn-outline btn-block exam-screen-actions" onClick={() => navigate('/dashboard/mahasiswa/toefl?mode=baru')}>
                 Daftar Ujian Baru
               </button>
