@@ -39,7 +39,15 @@ const serializePendaftaran = (item) => {
       total_tagihan: Number(item.tagihan.total_tagihan),
       status: item.tagihan.status,
       batas_bayar: item.tagihan.batas_bayar,
-      pembayaran,
+      pembayaran: pembayaran ? {
+        id_pembayaran: pembayaran.id_pembayaran,
+        status: pembayaran.status,
+        nominal: Number(pembayaran.nominal),
+        bukti_path: pembayaran.bukti_path,
+        tanggal_unggah: pembayaran.tanggal_unggah,
+        tanggal_verifikasi: pembayaran.tanggal_verifikasi,
+        catatan: pembayaran.catatan,
+      } : null,
     } : null,
   };
 };
