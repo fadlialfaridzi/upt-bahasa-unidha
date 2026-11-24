@@ -65,7 +65,7 @@ function TinjauPembayaranModal({ pembayaran: p, onClose, onDone }) {
 
   return (
     <Modal
-      title="Tinjau bukti pembayaran"
+      title={p.tagihan.jenis_layanan === 'toefl' ? 'Tinjau bukti pembayaran TOEFL' : 'Tinjau bukti pembayaran'}
       subtitle={`${p.tagihan.kode_tagihan} · ${p.layanan.nama}`}
       onClose={onClose}
       busy={busy}

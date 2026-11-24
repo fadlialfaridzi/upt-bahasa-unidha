@@ -51,6 +51,7 @@ function App() {
             <Route path="admin/kelas" element={<RoleRoute dashboard="admin"><KelasAdminPage /></RoleRoute>} />
             <Route path="admin/kelas/:id/jadwal" element={<RoleRoute dashboard="admin"><JadwalKelasPage /></RoleRoute>} />
             <Route path="admin/toefl/kuota" element={<RoleRoute dashboard="admin"><ToeflKuotaPage /></RoleRoute>} />
+            <Route path="admin/toefl/pembayaran" element={<RoleRoute dashboard="admin"><VerifikasiPembayaranPage jenisLayanan="toefl" /></RoleRoute>} />
             <Route path="admin/toefl/sesi" element={<RoleRoute dashboard="admin"><ToeflSesiPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/tambah" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/:id/edit" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />

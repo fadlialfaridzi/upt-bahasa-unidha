@@ -302,7 +302,7 @@ export const daftarTes = async (req, res) => {
       await tx.notifikasi.create({
         data: {
           id_pengguna: req.user.id,
-          jenis: 'pembayaran',
+          jenis: 'pembayaran_toefl',
           judul: 'Tagihan TOEFL sudah tersedia',
           pesan: `Unduh slip tagihan ${tagihan.kode_tagihan}, lakukan pembayaran melalui teller, lalu unggah bukti transfer.`,
         },
@@ -356,27 +356,60 @@ export const getBuktiToefl = async (req, res) => {
 };
 
 export const uploadBuktiToefl = async (req, res) => {
+  const hapusBerkasUnggahan = async () => {
+    if (!req.file?.path) return;
+    try {
+      await fs.promises.unlink(req.file.path);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  };
+
   try {
     if (!req.file) return res.status(400).json({ message: 'Bukti pembayaran wajib diunggah' });
     const idPendaftaran = parseId(req.body.id_pendaftaran);
-    if (!idPendaftaran) return res.status(400).json({ message: 'Pendaftaran TOEFL tidak valid' });
+    if (!idPendaftaran) {
+      await hapusBerkasUnggahan();
+      return res.status(400).json({ message: 'Pendaftaran TOEFL tidak valid' });
+    }
     const pendaftaran = await prisma.pendaftaran_toefl.findFirst({
       where: { id_pendaftaran: idPendaftaran, id_pengguna: req.user.id },
       include: { tagihan: true, sesi_toefl: true },
     });
-    if (!pendaftaran?.tagihan) return res.status(404).json({ message: 'Tagihan pendaftaran tidak ditemukan' });
-    if (pendaftaran.status === 'dibatalkan') return res.status(400).json({ message: 'Pendaftaran telah dibatalkan' });
+    if (!pendaftaran?.tagihan) {
+      await hapusBerkasUnggahan();
+      return res.status(404).json({ message: 'Tagihan pendaftaran tidak ditemukan' });
+    }
+    if (pendaftaran.status === 'dibatalkan' || ['dibatalkan', 'kedaluwarsa', 'lunas'].includes(pendaftaran.tagihan.status)) {
+      await hapusBerkasUnggahan();
+      return res.status(400).json({ message: 'Tagihan ini tidak dapat menerima bukti pembayaran' });
+    }
 
     const buktiPath = req.file.path.replace(/\\/g, '/');
     const pembayaran = await prisma.$transaction(async (tx) => {
       const lama = await tx.pembayaran.findFirst({
         where: { id_tagihan: pendaftaran.tagihan.id_tagihan, id_cicilan: null },
       });
+      if (lama && lama.status !== 'ditolak') {
+        throw Object.assign(
+          new Error(lama.status === 'menunggu'
+            ? 'Bukti pembayaran masih menunggu verifikasi'
+            : 'Pembayaran telah terverifikasi'),
+          { status: 409 },
+        );
+      }
       const nominal = Number(pendaftaran.tagihan.total_tagihan);
       const result = lama
         ? await tx.pembayaran.update({
             where: { id_pembayaran: lama.id_pembayaran },
-            data: { bukti_path: buktiPath, tanggal_unggah: new Date(), nominal, status: 'menunggu' },
+            data: {
+              bukti_path: buktiPath,
+              tanggal_unggah: new Date(),
+              nominal,
+              status: 'menunggu',
+              tanggal_verifikasi: null,
+              catatan: null,
+            },
           })
         : await tx.pembayaran.create({
             data: {
@@ -399,7 +432,7 @@ export const uploadBuktiToefl = async (req, res) => {
       await tx.notifikasi.create({
         data: {
           id_pengguna: req.user.id,
-          jenis: 'pembayaran',
+          jenis: 'pembayaran_toefl',
           judul: 'Bukti pembayaran sedang diverifikasi',
           pesan: `Bukti pembayaran ${pendaftaran.tagihan.kode_tagihan} sudah dikirim dan menunggu validasi Staf UPT.`,
         },
@@ -412,6 +445,12 @@ export const uploadBuktiToefl = async (req, res) => {
       data: pembayaran,
     });
   } catch (error) {
+    try {
+      await hapusBerkasUnggahan();
+    } catch (cleanupError) {
+      console.error('Gagal menghapus berkas bukti TOEFL yang tidak tersimpan:', cleanupError);
+    }
+    if (error.status) return res.status(error.status).json({ message: error.message });
     res.status(500).json({ message: 'Gagal mengunggah bukti pembayaran', error: error.message });
   }
 };
