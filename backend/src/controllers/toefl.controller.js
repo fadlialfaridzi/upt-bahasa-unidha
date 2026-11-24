@@ -184,6 +184,14 @@ export const daftarTes = async (req, res) => {
         idEntitas: pendaftaran.id_pendaftaran,
         detail: { id_sesi: jadwalId, kode_tagihan: tagihan.kode_tagihan },
       });
+      await tx.notifikasi.create({
+        data: {
+          id_pengguna: req.user.id,
+          jenis: 'pembayaran',
+          judul: 'Tagihan TOEFL sudah tersedia',
+          pesan: `Unduh slip tagihan ${tagihan.kode_tagihan}, lakukan pembayaran melalui teller, lalu unggah bukti transfer.`,
+        },
+      });
       return pendaftaran;
     });
 
@@ -249,6 +257,14 @@ export const uploadBuktiToefl = async (req, res) => {
         entitas: 'pembayaran',
         idEntitas: result.id_pembayaran,
         detail: { kode_tagihan: pendaftaran.tagihan.kode_tagihan },
+      });
+      await tx.notifikasi.create({
+        data: {
+          id_pengguna: req.user.id,
+          jenis: 'pembayaran',
+          judul: 'Bukti pembayaran sedang diverifikasi',
+          pesan: `Bukti pembayaran ${pendaftaran.tagihan.kode_tagihan} sudah dikirim dan menunggu validasi Staf UPT.`,
+        },
       });
       return result;
     });

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { DASHBOARDS, ROLE_LABELS, dashboardKeyFor } from '../../config/roles.js';
 import Icon from '../ui/Icon.jsx';
+import api from '../../services/api.js';
 
 const initialsOf = (name = '') =>
   name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
@@ -20,6 +21,35 @@ function DashboardLayout() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    api.get('/notifikasi')
+      .then((res) => setNotifications(res.data.data || []))
+      .catch(() => setNotifications([]));
+  }, [user]);
+
+  const unreadCount = notifications.filter((item) => !item.sudah_dibaca).length;
+
+  const openNotification = async (item) => {
+    if (!item.sudah_dibaca) {
+      await api.patch(`/notifikasi/${item.id_notifikasi}/baca`).catch(() => null);
+      setNotifications((list) => list.map((row) =>
+        row.id_notifikasi === item.id_notifikasi ? { ...row, sudah_dibaca: true } : row
+      ));
+    }
+    setNotificationOpen(false);
+    navigate(item.judul?.includes('verifikasi') || item.judul?.includes('pembayaran')
+      ? '/dashboard/mahasiswa/toefl?mode=lanjut'
+      : '/dashboard/mahasiswa');
+  };
+
+  const markAllRead = async () => {
+    await api.patch('/notifikasi/baca-semua').catch(() => null);
+    setNotifications((list) => list.map((item) => ({ ...item, sudah_dibaca: true })));
+  };
 
   const config = DASHBOARDS[dashboardKeyFor(user.role)];
 
@@ -161,9 +191,30 @@ function DashboardLayout() {
               </button>
             )}
 
-            <button type="button" className="icon-btn" aria-label="Notifikasi">
-              <Icon name="bell" />
-            </button>
+            <div className="notification-menu">
+              <button type="button" className="icon-btn notification-trigger" aria-label="Notifikasi" onClick={() => setNotificationOpen((open) => !open)}>
+                <Icon name="bell" />
+                {unreadCount > 0 && <span className="notification-count">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+              </button>
+              {notificationOpen && (
+                <div className="notification-popover">
+                  <header>
+                    <strong>Notifikasi</strong>
+                    {unreadCount > 0 && <button type="button" onClick={markAllRead}>Tandai dibaca</button>}
+                  </header>
+                  <div className="notification-list">
+                    {notifications.length === 0 ? (
+                      <p>Belum ada notifikasi.</p>
+                    ) : notifications.slice(0, 8).map((item) => (
+                      <button type="button" key={item.id_notifikasi} className={!item.sudah_dibaca ? 'unread' : ''} onClick={() => openNotification(item)}>
+                        <span className="notification-icon"><Icon name="wallet" size={16} /></span>
+                        <span><strong>{item.judul}</strong><small>{item.pesan}</small></span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="user-chip">
               <span className="avatar" aria-hidden="true">{initialsOf(user.nama_lengkap)}</span>

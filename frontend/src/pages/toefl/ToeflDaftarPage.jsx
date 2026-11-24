@@ -219,6 +219,12 @@ function ToeflDaftarPage() {
     }
   };
 
+  const printSlip = () => {
+    document.body.classList.add('printing-slip');
+    window.print();
+    window.setTimeout(() => document.body.classList.remove('printing-slip'), 250);
+  };
+
   const uniqueAmount = pendaftaran
     ? Number(pendaftaran.tagihan?.total_tagihan || currentSession?.biaya || currentSession?.tarif || 0)
     : Number(currentSession?.biaya || currentSession?.tarif || 0);
@@ -352,6 +358,9 @@ function ToeflDaftarPage() {
                   <h3 className="unique-amount">{formatRupiah(uniquePayment).replace(',00', '')}</h3>
                   <p className="cell-sub">Transfer sesuai nominal unik untuk mempermudah verifikasi.</p>
                   <div className="bank-box"><small>Rekening tujuan</small><strong>0000 0000 0000</strong><p>Bank Nagari Syariah · UPT Bahasa UNIDHA</p></div>
+                  <button type="button" className="btn btn-outline btn-block toefl-download-slip" onClick={printSlip}>
+                    <Icon name="download" size={17} /> Unduh Slip Tagihan PDF
+                  </button>
                 </div>
                 <form className="proof-upload" onSubmit={uploadProof}>
                   <h3>Unggah bukti pembayaran</h3>
@@ -368,6 +377,31 @@ function ToeflDaftarPage() {
           </section>
           <PaymentSide session={currentSession} />
         </div>
+      )}
+
+      {step === 4 && (
+        <article className="toefl-slip-print">
+          <header>
+            <div className="toefl-slip-logo">U</div>
+            <div><strong>UPT Bahasa UNIDHA</strong><small>Universitas Dharma Andalas</small></div>
+            <span>SLIP TAGIHAN TOEFL</span>
+          </header>
+          <dl>
+            <ConfirmRow label="Kode Tagihan" value={pendaftaran?.tagihan?.kode_tagihan || '-'} />
+            <ConfirmRow label="Nama Peserta" value={profile.nama_lengkap || '-'} />
+            <ConfirmRow label="NIM / Identitas" value={profile.nim || '-'} />
+            <ConfirmRow label="Jenis Ujian" value="TOEFL ITP" />
+            <ConfirmRow label="Sesi" value={currentSession?.nama_sesi || '-'} />
+            <ConfirmRow label="Tanggal Ujian" value={formatTanggal(currentSession?.tanggal)} />
+            <ConfirmRow label="Nominal Tagihan" value={formatRupiah(uniquePayment).replace(',00', '')} />
+          </dl>
+          <div className="toefl-slip-bank">
+            <strong>Bank Nagari Syariah · UPT Bahasa UNIDHA</strong>
+            <span>Nomor rekening: 0000 0000 0000</span>
+            <small>Bayar melalui teller dan simpan bukti transaksi bank.</small>
+          </div>
+          <footer>Setelah pembayaran, kembali ke portal untuk mengunggah bukti pembayaran pada menu Tes TOEFL.</footer>
+        </article>
       )}
 
       {step === 5 && (
