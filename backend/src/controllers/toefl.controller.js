@@ -374,7 +374,11 @@ export const uploadBuktiToefl = async (req, res) => {
     }
     const pendaftaran = await prisma.pendaftaran_toefl.findFirst({
       where: { id_pendaftaran: idPendaftaran, id_pengguna: req.user.id },
-      include: { tagihan: true, sesi_toefl: true },
+      include: {
+        tagihan: true,
+        sesi_toefl: true,
+        pengguna: { select: { nama_lengkap: true } },
+      },
     });
     if (!pendaftaran?.tagihan) {
       await hapusBerkasUnggahan();
@@ -437,6 +441,20 @@ export const uploadBuktiToefl = async (req, res) => {
           pesan: `Bukti pembayaran ${pendaftaran.tagihan.kode_tagihan} sudah dikirim dan menunggu validasi Staf UPT.`,
         },
       });
+      const stafUpt = await tx.pengguna.findMany({
+        where: { status_aktif: true, role: { nama_role: 'staf_upt' } },
+        select: { id_pengguna: true },
+      });
+      if (stafUpt.length > 0) {
+        await tx.notifikasi.createMany({
+          data: stafUpt.map(({ id_pengguna }) => ({
+            id_pengguna,
+            jenis: 'pembayaran_toefl',
+            judul: 'Bukti pembayaran TOEFL perlu divalidasi',
+            pesan: `${pendaftaran.pengguna.nama_lengkap} mengunggah bukti pembayaran untuk tagihan ${pendaftaran.tagihan.kode_tagihan}. Buka Validasi TOEFL untuk meninjau.`,
+          })),
+        });
+      }
       return result;
     });
 
