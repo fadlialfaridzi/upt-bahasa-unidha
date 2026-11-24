@@ -3783,6 +3783,18 @@ input {
   color: var(--brand-800);
 }
 
+.toefl-active-registration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #bdd1cb;
+  border-radius: var(--radius);
+  background: var(--brand-50);
+}
+
 @media (max-width: 900px) {
   .toefl-register-layout {
     grid-template-columns: minmax(0, 1fr);
