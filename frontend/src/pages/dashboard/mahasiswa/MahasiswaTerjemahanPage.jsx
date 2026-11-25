@@ -35,6 +35,7 @@ function MahasiswaTerjemahanPage() {
   const [revisionId, setRevisionId] = useState(null);
   const [alasan, setAlasan] = useState('');
   const [submittingId, setSubmittingId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const loadPesanan = useCallback(async () => {
     setGagal(false);
@@ -55,6 +56,30 @@ function MahasiswaTerjemahanPage() {
   const bukaFormRevisi = (idPesanan) => {
     setRevisionId(idPesanan);
     setAlasan('');
+  };
+
+  const unduhHasil = async (item) => {
+    setDownloadingId(item.id_pesanan);
+    try {
+      const response = await api.get(`/terjemahan/my-orders/${item.id_pesanan}/hasil`, {
+        responseType: 'blob',
+      });
+      const disposition = response.headers['content-disposition'] || '';
+      const fileName = disposition.match(/filename="?([^";]+)"?/i)?.[1]
+        || `hasil-terjemahan-${item.id_pesanan}`;
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal mengunduh dokumen hasil terjemahan.');
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const kirimPengajuanRevisi = async (event, item) => {
@@ -144,12 +169,21 @@ function MahasiswaTerjemahanPage() {
                   </div>
 
                   {job?.versi_hasil > 0 && (
-                    <div className="student-translation-result" role="status">
+                    <div className="student-translation-result">
                       <Icon name="file" size={17} />
                       <span>
                         Hasil versi {job.versi_hasil} tersedia
                         {job.tanggal_unggah_hasil ? ` · diunggah ${formatTanggal(job.tanggal_unggah_hasil)}` : ''}
                       </span>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => unduhHasil(item)}
+                        disabled={downloadingId === item.id_pesanan}
+                      >
+                        <Icon name="download" size={15} />
+                        {downloadingId === item.id_pesanan ? 'Menyiapkan...' : 'Unduh hasil'}
+                      </button>
                     </div>
                   )}
 

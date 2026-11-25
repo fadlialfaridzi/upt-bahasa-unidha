@@ -4915,6 +4915,10 @@ input {
   font-size: 0.83rem;
 }
 
+.student-translation-result > span {
+  flex: 1;
+}
+
 .student-translation-revision-note {
   padding: 13px 15px;
   border: 1px solid #f0c4c4;
@@ -4971,6 +4975,14 @@ input {
 
   .student-translation-meta {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-translation-result {
+    flex-wrap: wrap;
+  }
+
+  .student-translation-result > button {
+    width: 100%;
   }
 
   .student-translation-form-actions {

@@ -2,9 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import prisma from '../lib/prisma.js';
 import { catatAudit } from '../utils/audit.js';
+import { resolvePrivateHasilPath } from '../utils/private-terjemahan-file.js';
 
 const UPLOADS_ROOT = path.resolve('uploads');
-const PRIVATE_RESULTS_ROOT = path.resolve('private_uploads', 'terjemahan-hasil');
 
 const JOB_INCLUDE = {
   pesanan_terjemahan: {
@@ -141,15 +141,8 @@ export const getHasilJobOrder = async (req, res) => {
       return res.status(404).json({ message: 'Belum ada hasil terjemahan yang diunggah' });
     }
 
-    const filePath = path.resolve(job.file_hasil_path);
-    const relativePath = path.relative(PRIVATE_RESULTS_ROOT, filePath);
-    if (
-      !relativePath
-      || relativePath === '..'
-      || relativePath.startsWith(`..${path.sep}`)
-      || path.isAbsolute(relativePath)
-      || !fs.existsSync(filePath)
-    ) {
+    const filePath = resolvePrivateHasilPath(job.file_hasil_path);
+    if (!filePath) {
       return res.status(404).json({ message: 'File hasil terjemahan tidak ditemukan' });
     }
 
