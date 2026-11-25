@@ -30,7 +30,7 @@ export const DASHBOARDS = {
       { label: 'Kuota TOEFL', icon: 'users', path: '/dashboard/admin/toefl/kuota' },
       { label: 'Validasi TOEFL', icon: 'checkCircle', path: '/dashboard/admin/toefl/pembayaran' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/admin/kelas' },
-      { label: 'Penerjemahan', icon: 'languages' },
+      { label: 'Hasil terjemahan', icon: 'languages', path: '/dashboard/admin/terjemahan/hasil' },
       { label: 'Tagihan & pembayaran', icon: 'wallet', path: '/dashboard/admin/pembayaran' },
       { label: 'Sertifikat', icon: 'award' },
       { label: 'Analitik', icon: 'chart' },

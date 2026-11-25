@@ -21,6 +21,10 @@ import {
   getPesananTerjemahanSaya,
   unduhHasilPesananSaya,
 } from '../controllers/pesanan-terjemahan.controller.js';
+import {
+  getHasilTerjemahanUntukAdmin,
+  unduhHasilTerjemahanUntukAdmin,
+} from '../controllers/admin-hasil-terjemahan.controller.js';
 
 const router = Router();
 
@@ -30,6 +34,8 @@ router.get('/my-terjemahan', authenticate, getMyTerjemahan);
 router.get('/my-orders', authenticate, authorizeRole('peserta'), getPesananTerjemahanSaya);
 router.get('/my-orders/:id/hasil', authenticate, authorizeRole('peserta'), unduhHasilPesananSaya);
 router.post('/my-orders/:id/revisi', authenticate, authorizeRole('peserta'), ajukanRevisiTerjemahan);
+router.get('/admin/orders', authenticate, authorizeAdmin, getHasilTerjemahanUntukAdmin);
+router.get('/admin/orders/:id/hasil', authenticate, authorizeAdmin, unduhHasilTerjemahanUntukAdmin);
 
 // Job order hanya dapat dilihat dan dikelola penerjemah yang ditugaskan.
 router.get('/job-orders', authenticate, authorizeRole('penerjemah'), getJobOrderSaya);
