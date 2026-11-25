@@ -1,5 +1,7 @@
+import path from 'path';
 import prisma from '../lib/prisma.js';
 import { catatAudit } from '../utils/audit.js';
+import { resolvePrivateHasilPath } from '../utils/private-terjemahan-file.js';
 
 const MIN_ALASAN_REVISI = 10;
 const MAX_ALASAN_REVISI = 1000;
@@ -62,6 +64,52 @@ export const getPesananTerjemahanSaya = async (req, res) => {
   } catch (error) {
     console.error('Gagal mengambil pesanan terjemahan peserta:', error);
     return res.status(500).json({ message: 'Gagal memuat pesanan terjemahan Anda' });
+  }
+};
+
+export const unduhHasilPesananSaya = async (req, res) => {
+  const idPesanan = parseId(req.params.id);
+  if (!idPesanan) {
+    return res.status(400).json({ message: 'ID pesanan tidak valid' });
+  }
+
+  try {
+    const pesanan = await prisma.pesanan_terjemahan.findFirst({
+      where: { id_pesanan: idPesanan, id_pemohon: req.user.id },
+      select: {
+        job_order: {
+          select: {
+            file_hasil_path: true,
+            versi_hasil: true,
+          },
+        },
+      },
+    });
+    if (!pesanan) return res.status(404).json({ message: 'Pesanan terjemahan tidak ditemukan' });
+
+    const job = pesanan.job_order;
+    if (!job?.file_hasil_path || job.versi_hasil < 1) {
+      return res.status(404).json({ message: 'Hasil terjemahan belum tersedia' });
+    }
+
+    const filePath = resolvePrivateHasilPath(job.file_hasil_path);
+    if (!filePath) {
+      return res.status(404).json({ message: 'File hasil terjemahan tidak ditemukan' });
+    }
+
+    const namaUnduhan = `hasil-terjemahan-${idPesanan}-v${job.versi_hasil}${path.extname(filePath)}`;
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.download(filePath, namaUnduhan, (error) => {
+      if (!error) return;
+      console.error('Gagal mengirim hasil terjemahan kepada peserta:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Gagal mengunduh hasil terjemahan' });
+      }
+    });
+  } catch (error) {
+    console.error('Gagal mengambil hasil terjemahan peserta:', error);
+    return res.status(500).json({ message: 'Gagal mengunduh hasil terjemahan' });
   }
 };
 
