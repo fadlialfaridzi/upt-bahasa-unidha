@@ -62,7 +62,7 @@ export const DASHBOARDS = {
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/mahasiswa' },
       { label: 'Tes TOEFL', icon: 'graduation', path: '/dashboard/mahasiswa/toefl' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/mahasiswa/pelatihan' },
-      { label: 'Penerjemahan', icon: 'languages' },
+      { label: 'Penerjemahan saya', icon: 'languages', path: '/dashboard/mahasiswa/terjemahan' },
       { label: 'Tagihan Pelatihan', icon: 'wallet', path: '/dashboard/mahasiswa/pelatihan?tab=tagihan' },
       { label: 'Tagihan TOEFL', icon: 'wallet', path: '/dashboard/mahasiswa/toefl/tagihan' },
       { label: 'Presensi & EWS', icon: 'qr' },
