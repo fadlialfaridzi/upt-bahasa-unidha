@@ -8,10 +8,12 @@ import {
 } from '../controllers/terjemahan.controller.js';
 import { authenticate, authorizeAdmin } from '../middlewares/auth.middleware.js';
 import { authorizeRole } from '../middlewares/role.middleware.js';
-import { upload } from '../middlewares/upload.middleware.js';
+import { upload, uploadHasilTerjemahan } from '../middlewares/upload.middleware.js';
 import {
   getDokumenAsliJobOrder,
+  getHasilJobOrder,
   getJobOrderSaya,
+  uploadHasilJobOrder,
   ubahStatusJobOrder,
 } from '../controllers/job-order.controller.js';
 
@@ -24,6 +26,8 @@ router.get('/my-terjemahan', authenticate, getMyTerjemahan);
 // Job order hanya dapat dilihat dan dikelola penerjemah yang ditugaskan.
 router.get('/job-orders', authenticate, authorizeRole('penerjemah'), getJobOrderSaya);
 router.get('/job-orders/:id/dokumen-asli', authenticate, authorizeRole('penerjemah'), getDokumenAsliJobOrder);
+router.get('/job-orders/:id/hasil', authenticate, authorizeRole('penerjemah'), getHasilJobOrder);
+router.post('/job-orders/:id/hasil', authenticate, authorizeRole('penerjemah'), uploadHasilTerjemahan, uploadHasilJobOrder);
 router.patch('/job-orders/:id/status', authenticate, authorizeRole('penerjemah'), ubahStatusJobOrder);
 
 router.get('/:id', authenticate, getTerjemahanById);
