@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../../services/api.js';
 import Icon from '../../../components/ui/Icon.jsx';
@@ -30,6 +30,9 @@ const formatRupiah = (value) => value == null
   ? '—'
   : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value));
 
+const formatUkuran = (bytes) => `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+const BATAS_UKURAN_HASIL = 10 * 1024 * 1024;
+
 const tenggatLabel = (value) => {
   if (!value) return 'Tenggat belum ditentukan';
   const tenggat = new Date(value);
@@ -55,6 +58,10 @@ function JobOrderTerjemahanPage() {
   const [gagal, setGagal] = useState(false);
   const [aksiBerjalan, setAksiBerjalan] = useState(false);
   const [unduhBerjalan, setUnduhBerjalan] = useState(false);
+  const [fileHasil, setFileHasil] = useState(null);
+  const [unggahBerjalan, setUnggahBerjalan] = useState(false);
+  const [unduhHasilBerjalan, setUnduhHasilBerjalan] = useState(false);
+  const inputHasilRef = useRef(null);
 
   const load = useCallback(async () => {
     setGagal(false);
@@ -103,6 +110,11 @@ function JobOrderTerjemahanPage() {
 
   const selectedJob = (jobs || []).find((job) => job.id_job === selectedId) || null;
 
+  useEffect(() => {
+    setFileHasil(null);
+    if (inputHasilRef.current) inputHasilRef.current.value = '';
+  }, [selectedId]);
+
   const jalankanAksi = async (action) => {
     if (!selectedJob) return;
     setAksiBerjalan(true);
@@ -134,6 +146,63 @@ function JobOrderTerjemahanPage() {
       toast.error(error.response?.data?.message || 'Gagal mengunduh dokumen sumber.');
     } finally {
       setUnduhBerjalan(false);
+    }
+  };
+
+  const pilihFileHasil = (event) => {
+    const file = event.target.files?.[0] ?? null;
+    if (file && file.size === 0) {
+      toast.error('File hasil tidak boleh kosong.');
+      event.target.value = '';
+      setFileHasil(null);
+      return;
+    }
+    if (file && file.size > BATAS_UKURAN_HASIL) {
+      toast.error('Ukuran file hasil maksimal 10 MB.');
+      event.target.value = '';
+      setFileHasil(null);
+      return;
+    }
+    setFileHasil(file);
+  };
+
+  const unggahHasil = async (event) => {
+    event.preventDefault();
+    if (!selectedJob || !fileHasil) return;
+
+    const formData = new FormData();
+    formData.append('hasil', fileHasil);
+    setUnggahBerjalan(true);
+    try {
+      const res = await api.post(`/terjemahan/job-orders/${selectedJob.id_job}/hasil`, formData);
+      toast.success(res.data.message);
+      setFileHasil(null);
+      if (inputHasilRef.current) inputHasilRef.current.value = '';
+      await load();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal mengunggah hasil terjemahan.');
+    } finally {
+      setUnggahBerjalan(false);
+    }
+  };
+
+  const unduhHasil = async () => {
+    if (!selectedJob) return;
+    setUnduhHasilBerjalan(true);
+    try {
+      const res = await api.get(`/terjemahan/job-orders/${selectedJob.id_job}/hasil`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = selectedJob.nama_file_hasil || `hasil-${selectedJob.kode_job}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal mengunduh hasil terjemahan.');
+    } finally {
+      setUnduhHasilBerjalan(false);
     }
   };
 
@@ -302,7 +371,22 @@ function JobOrderTerjemahanPage() {
                 <Icon name="download" size={15} /> {unduhBerjalan ? 'Menyiapkan...' : 'Unduh'}
               </button>
             </div>
-            {selectedJob.kategori === 'revisi' && selectedJob.catatan_revisi && (
+            {selectedJob.versi_hasil > 0 && (
+              <div className="job-order-source job-order-result">
+                <span className="icon-tile icon-tile-accent"><Icon name="file" size={17} /></span>
+                <div>
+                  <strong>Hasil terakhir · versi {selectedJob.versi_hasil}</strong>
+                  <small>
+                    {selectedJob.nama_file_hasil}
+                    {selectedJob.tanggal_unggah_hasil ? ` · ${formatWaktu(selectedJob.tanggal_unggah_hasil)}` : ''}
+                  </small>
+                </div>
+                <button type="button" className="btn btn-outline btn-sm" onClick={unduhHasil} disabled={unduhHasilBerjalan}>
+                  <Icon name="download" size={15} /> {unduhHasilBerjalan ? 'Menyiapkan...' : 'Unduh'}
+                </button>
+              </div>
+            )}
+            {selectedJob.catatan_revisi && (
               <div className="job-order-revision" role="note">
                 <strong>Catatan revisi</strong>
                 <p>{selectedJob.catatan_revisi}</p>
@@ -349,10 +433,48 @@ function JobOrderTerjemahanPage() {
                 {aksiBerjalan ? 'Memproses...' : aksiWorkspace.label}
               </button>
             )}
-            <div className="job-order-workflow-note">
-              <Icon name="alert" size={16} />
-              <span>Pengunggahan hasil terjemahan dikelola melalui tahap pengiriman hasil setelah pekerjaan dimulai.</span>
-            </div>
+            {selectedJob.status_job === 'dikerjakan' && selectedJob.status_pesanan === 'dikerjakan' ? (
+              <form className="job-order-upload" onSubmit={unggahHasil}>
+                <div>
+                  <h3>{selectedJob.versi_hasil > 0 ? 'Unggah hasil revisi' : 'Unggah hasil terjemahan'}</h3>
+                  <p>
+                    {selectedJob.versi_hasil > 0
+                      ? 'Unggah dokumen revisi setelah catatan pemohon ditindaklanjuti.'
+                      : 'Unggah dokumen final untuk menyelesaikan job order ini.'}
+                  </p>
+                </div>
+                <label className="field">
+                  <span className="field-label">File hasil (PDF atau Word, maks. 10 MB)</span>
+                  <input
+                    ref={inputHasilRef}
+                    className="input job-order-file-input"
+                    type="file"
+                    name="hasil"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={pilihFileHasil}
+                    required
+                  />
+                </label>
+                {fileHasil && (
+                  <div className="job-order-file-selected">
+                    <Icon name="file" size={16} />
+                    <span>{fileHasil.name} · {formatUkuran(fileHasil.size)}</span>
+                  </div>
+                )}
+                <button type="submit" className="btn btn-primary btn-block" disabled={unggahBerjalan || !fileHasil}>
+                  {unggahBerjalan
+                    ? 'Mengunggah...'
+                    : selectedJob.versi_hasil > 0
+                      ? 'Kirim hasil revisi'
+                      : 'Kirim hasil terjemahan'}
+                </button>
+              </form>
+            ) : (
+              <div className="job-order-workflow-note">
+                <Icon name="alert" size={16} />
+                <span>Unggah hasil tersedia setelah Anda memulai pengerjaan. Pengiriman hasil menandai job order sebagai selesai.</span>
+              </div>
+            )}
           </aside>
         </section>
       )}

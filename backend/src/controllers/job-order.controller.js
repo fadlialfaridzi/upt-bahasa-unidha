@@ -4,6 +4,7 @@ import prisma from '../lib/prisma.js';
 import { catatAudit } from '../utils/audit.js';
 
 const UPLOADS_ROOT = path.resolve('uploads');
+const PRIVATE_RESULTS_ROOT = path.resolve('private_uploads', 'terjemahan-hasil');
 
 const JOB_INCLUDE = {
   pesanan_terjemahan: {
@@ -63,6 +64,8 @@ const toResponse = (job) => {
     pemohon: pesanan.pemohon,
     catatan_revisi: job.catatan_revisi,
     versi_hasil: job.versi_hasil,
+    nama_file_hasil: namaFile(job.file_hasil_path),
+    tanggal_unggah_hasil: job.tanggal_unggah_hasil,
     aktivitas,
   };
 };
@@ -123,6 +126,129 @@ export const getDokumenAsliJobOrder = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengunduh dokumen sumber', error: error.message });
   }
+};
+
+export const getHasilJobOrder = async (req, res) => {
+  try {
+    const idJob = parseId(req.params.id);
+    if (!idJob) return res.status(400).json({ message: 'ID job order tidak valid' });
+
+    const job = await jobMilikPenerjemah(idJob, req.user.id);
+    if (!job || job.pesanan_terjemahan.status === 'dibatalkan') {
+      return res.status(404).json({ message: 'Job order tidak ditemukan' });
+    }
+    if (!job.file_hasil_path) {
+      return res.status(404).json({ message: 'Belum ada hasil terjemahan yang diunggah' });
+    }
+
+    const filePath = path.resolve(job.file_hasil_path);
+    const relativePath = path.relative(PRIVATE_RESULTS_ROOT, filePath);
+    if (
+      !relativePath
+      || relativePath === '..'
+      || relativePath.startsWith(`..${path.sep}`)
+      || path.isAbsolute(relativePath)
+      || !fs.existsSync(filePath)
+    ) {
+      return res.status(404).json({ message: 'File hasil terjemahan tidak ditemukan' });
+    }
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    return res.download(filePath, namaFile(filePath));
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengunduh hasil terjemahan', error: error.message });
+  }
+};
+
+const hapusFileUnggahan = async (filePath) => {
+  if (!filePath) return;
+  try {
+    await fs.promises.unlink(filePath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error('Gagal membersihkan file hasil terjemahan yang tidak tersimpan:', error.message);
+    }
+  }
+};
+
+export const uploadHasilJobOrder = async (req, res) => {
+  const idJob = parseId(req.params.id);
+  if (!idJob) {
+    await hapusFileUnggahan(req.file?.path);
+    return res.status(400).json({ message: 'ID job order tidak valid' });
+  }
+  if (!req.file) return res.status(400).json({ message: 'Pilih file hasil terjemahan terlebih dahulu' });
+
+  let hasil;
+  try {
+    hasil = await prisma.$transaction(async (tx) => {
+      const job = await jobMilikPenerjemah(idJob, req.user.id, tx);
+      if (!job || job.pesanan_terjemahan.status === 'dibatalkan') {
+        throw Object.assign(new Error('Job order tidak ditemukan'), { status: 404 });
+      }
+      if (job.status !== 'dikerjakan' || job.pesanan_terjemahan.status !== 'dikerjakan') {
+        throw Object.assign(new Error('Mulai pengerjaan job order sebelum mengunggah hasil'), { status: 409 });
+      }
+
+      const versiBerikutnya = job.versi_hasil + 1;
+      const unggahRevisi = job.versi_hasil > 0;
+      const updatedJob = await tx.job_order.updateMany({
+        where: { id_job: idJob, id_penerjemah: req.user.id, status: 'dikerjakan' },
+        data: {
+          status: 'selesai',
+          file_hasil_path: req.file.path,
+          versi_hasil: { increment: 1 },
+          catatan_revisi: null,
+          tanggal_unggah_hasil: new Date(),
+        },
+      });
+      if (!updatedJob.count) {
+        throw Object.assign(new Error('Status job order sudah berubah. Muat ulang halaman.'), { status: 409 });
+      }
+
+      const updatedPesanan = await tx.pesanan_terjemahan.updateMany({
+        where: { id_pesanan: job.id_pesanan, status: 'dikerjakan' },
+        data: { status: 'selesai' },
+      });
+      if (!updatedPesanan.count) {
+        throw Object.assign(new Error('Status pesanan sudah berubah. Muat ulang halaman.'), { status: 409 });
+      }
+
+      await tx.riwayat_status_terjemahan.create({
+        data: {
+          id_pesanan: job.id_pesanan,
+          status: 'selesai',
+          keterangan: unggahRevisi
+            ? `Hasil revisi versi ${versiBerikutnya} diunggah.`
+            : 'Hasil terjemahan versi 1 diunggah.',
+        },
+      });
+      await catatAudit(tx, req, {
+        aksi: unggahRevisi ? 'unggah_hasil_revisi' : 'unggah_hasil_terjemahan',
+        entitas: 'job_order',
+        idEntitas: idJob,
+        detail: { id_pesanan: job.id_pesanan, versi_hasil: versiBerikutnya },
+      });
+
+      return jobMilikPenerjemah(idJob, req.user.id, tx);
+    });
+  } catch (error) {
+    await hapusFileUnggahan(req.file.path);
+    const status = error.status ?? 500;
+    return res.status(status).json({
+      message: status === 500 ? 'Gagal mengunggah hasil terjemahan' : error.message,
+      ...(status === 500 ? { error: error.message } : {}),
+    });
+  }
+
+  const revisi = hasil.versi_hasil > 1;
+  return res.status(201).json({
+    message: revisi
+      ? `Hasil revisi versi ${hasil.versi_hasil} berhasil diunggah`
+      : 'Hasil terjemahan berhasil diunggah',
+    data: toResponse(hasil),
+  });
 };
 
 export const ubahStatusJobOrder = async (req, res) => {
