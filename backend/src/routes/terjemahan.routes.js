@@ -16,12 +16,18 @@ import {
   uploadHasilJobOrder,
   ubahStatusJobOrder,
 } from '../controllers/job-order.controller.js';
+import {
+  ajukanRevisiTerjemahan,
+  getPesananTerjemahanSaya,
+} from '../controllers/pesanan-terjemahan.controller.js';
 
 const router = Router();
 
 // User - butuh login
 router.post('/ajukan', authenticate, upload.single('dokumen'), ajukanTerjemahan);
 router.get('/my-terjemahan', authenticate, getMyTerjemahan);
+router.get('/my-orders', authenticate, authorizeRole('peserta'), getPesananTerjemahanSaya);
+router.post('/my-orders/:id/revisi', authenticate, authorizeRole('peserta'), ajukanRevisiTerjemahan);
 
 // Job order hanya dapat dilihat dan dikelola penerjemah yang ditugaskan.
 router.get('/job-orders', authenticate, authorizeRole('penerjemah'), getJobOrderSaya);
