@@ -4,6 +4,7 @@ export const ROLE_LABELS = {
   super_admin: 'Super Admin',
   staf_upt: 'Admin UPT',
   pengajar: 'Dosen',
+  penerjemah: 'Penerjemah',
   peserta: 'Mahasiswa',
 };
 
@@ -47,6 +48,13 @@ export const DASHBOARDS = {
       { label: 'Input nilai', icon: 'clipboard' },
     ],
   },
+  penerjemah: {
+    path: '/dashboard/penerjemah',
+    label: 'Penerjemah',
+    menu: [
+      { label: 'Job order', icon: 'languages', path: '/dashboard/penerjemah' },
+    ],
+  },
   mahasiswa: {
     path: '/dashboard/mahasiswa',
     label: 'Mahasiswa',
@@ -67,9 +75,9 @@ const ROLE_TO_DASHBOARD = {
   super_admin: 'superadmin',
   staf_upt: 'admin',
   pengajar: 'dosen',
+  penerjemah: 'penerjemah',
   peserta: 'mahasiswa',
 };
 
-// Role yang belum punya dashboard sendiri (mis. penerjemah) sementara diarahkan ke dashboard pengguna.
 export const dashboardKeyFor = (role) => ROLE_TO_DASHBOARD[role] ?? 'mahasiswa';
 export const dashboardPathFor = (role) => DASHBOARDS[dashboardKeyFor(role)].path;
