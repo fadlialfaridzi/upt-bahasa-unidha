@@ -61,6 +61,8 @@ function JobOrderTerjemahanPage() {
   const [fileHasil, setFileHasil] = useState(null);
   const [unggahBerjalan, setUnggahBerjalan] = useState(false);
   const [unduhHasilBerjalan, setUnduhHasilBerjalan] = useState(false);
+  const [pratinjauBerjalan, setPratinjauBerjalan] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const inputHasilRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -112,8 +114,13 @@ function JobOrderTerjemahanPage() {
 
   useEffect(() => {
     setFileHasil(null);
+    setPreviewUrl(null);
     if (inputHasilRef.current) inputHasilRef.current.value = '';
   }, [selectedId]);
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   const jalankanAksi = async (action) => {
     if (!selectedJob) return;
@@ -203,6 +210,19 @@ function JobOrderTerjemahanPage() {
       toast.error(error.response?.data?.message || 'Gagal mengunduh hasil terjemahan.');
     } finally {
       setUnduhHasilBerjalan(false);
+    }
+  };
+
+  const lihatHasil = async () => {
+    if (!selectedJob || !selectedJob.nama_file_hasil?.toLowerCase().endsWith('.pdf')) return;
+    setPratinjauBerjalan(true);
+    try {
+      const res = await api.get(`/terjemahan/job-orders/${selectedJob.id_job}/hasil`, { responseType: 'blob' });
+      setPreviewUrl(URL.createObjectURL(res.data));
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal membuka pratinjau hasil terjemahan.');
+    } finally {
+      setPratinjauBerjalan(false);
     }
   };
 
@@ -381,9 +401,28 @@ function JobOrderTerjemahanPage() {
                     {selectedJob.tanggal_unggah_hasil ? ` · ${formatWaktu(selectedJob.tanggal_unggah_hasil)}` : ''}
                   </small>
                 </div>
+                {selectedJob.nama_file_hasil?.toLowerCase().endsWith('.pdf') && (
+                  <button type="button" className="btn btn-outline btn-sm" onClick={lihatHasil} disabled={pratinjauBerjalan}>
+                    <Icon name="eye" size={15} /> {pratinjauBerjalan ? 'Membuka...' : 'Lihat PDF'}
+                  </button>
+                )}
                 <button type="button" className="btn btn-outline btn-sm" onClick={unduhHasil} disabled={unduhHasilBerjalan}>
                   <Icon name="download" size={15} /> {unduhHasilBerjalan ? 'Menyiapkan...' : 'Unduh'}
                 </button>
+              </div>
+            )}
+            {previewUrl && (
+              <div className="job-order-preview">
+                <div className="job-order-preview-head">
+                  <div>
+                    <strong>Pratinjau hasil PDF</strong>
+                    <small>{selectedJob.nama_file_hasil}</small>
+                  </div>
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setPreviewUrl(null)}>
+                    <Icon name="x" size={15} /> Tutup pratinjau
+                  </button>
+                </div>
+                <iframe src={previewUrl} title={`Pratinjau ${selectedJob.nama_file_hasil}`} />
               </div>
             )}
             {selectedJob.catatan_revisi && (
