@@ -23,8 +23,7 @@ async function logAudit(idPengguna, aksi, entitas, idEntitas, detail, ip) {
 
 /**
  * Validasi role untuk buat/ubah akun.
- * Role akun hanya 4 (super_admin, staf_upt, pengajar, peserta); Super Admin tidak bisa
- * ditambahkan/diberikan lewat kelola akun, dan role akun Super Admin yang ada tidak bisa diubah.
+ * Super Admin tidak bisa ditambahkan lewat kelola akun, dan role akun Super Admin yang ada tidak bisa diubah.
  * @returns pesan error, atau null jika valid
  */
 async function validasiRole({ idRole, idRoleEkstra, existing = null }) {

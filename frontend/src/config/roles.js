@@ -4,6 +4,7 @@ export const ROLE_LABELS = {
   super_admin: 'Super Admin',
   staf_upt: 'Admin UPT',
   pengajar: 'Dosen',
+  penerjemah: 'Penerjemah',
   peserta: 'Mahasiswa',
 };
 
@@ -25,9 +26,11 @@ export const DASHBOARDS = {
     label: 'Admin UPT',
     menu: [
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/admin' },
-      { label: 'Sesi TOEFL', icon: 'graduation' },
+      { label: 'Sesi TOEFL', icon: 'graduation', path: '/dashboard/admin/toefl/sesi' },
+      { label: 'Kuota TOEFL', icon: 'users', path: '/dashboard/admin/toefl/kuota' },
+      { label: 'Validasi TOEFL', icon: 'checkCircle', path: '/dashboard/admin/toefl/pembayaran' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/admin/kelas' },
-      { label: 'Penerjemahan', icon: 'languages' },
+      { label: 'Hasil terjemahan', icon: 'languages', path: '/dashboard/admin/terjemahan/hasil' },
       { label: 'Tagihan & pembayaran', icon: 'wallet', path: '/dashboard/admin/pembayaran' },
       { label: 'Sertifikat', icon: 'award' },
       { label: 'Analitik', icon: 'chart' },
@@ -45,16 +48,27 @@ export const DASHBOARDS = {
       { label: 'Input nilai', icon: 'clipboard' },
     ],
   },
+  penerjemah: {
+    path: '/dashboard/penerjemah',
+    label: 'Penerjemah',
+    menu: [
+      { label: 'Job order', icon: 'languages', path: '/dashboard/penerjemah' },
+    ],
+  },
   mahasiswa: {
     path: '/dashboard/mahasiswa',
     label: 'Mahasiswa',
     menu: [
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/mahasiswa' },
-      { label: 'Tes TOEFL', icon: 'graduation' },
+      { label: 'Tes TOEFL', icon: 'graduation', path: '/dashboard/mahasiswa/toefl' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/mahasiswa/pelatihan' },
       { label: 'Penerjemahan', icon: 'languages' },
       { label: 'Tagihan', icon: 'wallet', path: '/dashboard/mahasiswa/pelatihan?tab=tagihan' },
       { label: 'Presensi & EWS', icon: 'qr', path: '/dashboard/mahasiswa/presensi-ews' },
+      { label: 'Penerjemahan saya', icon: 'languages', path: '/dashboard/mahasiswa/terjemahan' },
+      { label: 'Tagihan Pelatihan', icon: 'wallet', path: '/dashboard/mahasiswa/pelatihan?tab=tagihan' },
+      { label: 'Tagihan TOEFL', icon: 'wallet', path: '/dashboard/mahasiswa/toefl/tagihan' },
+      { label: 'Presensi & EWS', icon: 'qr' },
       { label: 'Sertifikat', icon: 'award' },
     ],
   },
@@ -64,9 +78,9 @@ const ROLE_TO_DASHBOARD = {
   super_admin: 'superadmin',
   staf_upt: 'admin',
   pengajar: 'dosen',
+  penerjemah: 'penerjemah',
   peserta: 'mahasiswa',
 };
 
-// Role yang belum punya dashboard sendiri (mis. penerjemah) sementara diarahkan ke dashboard pengguna.
 export const dashboardKeyFor = (role) => ROLE_TO_DASHBOARD[role] ?? 'mahasiswa';
 export const dashboardPathFor = (role) => DASHBOARDS[dashboardKeyFor(role)].path;

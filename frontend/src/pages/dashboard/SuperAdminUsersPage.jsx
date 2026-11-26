@@ -13,6 +13,7 @@ const ROLE_BADGE_CLASS = {
   super_admin: 'badge-accent',
   staf_upt: 'badge-muted',
   pengajar: 'badge-muted',
+  penerjemah: 'badge-accent',
   peserta: 'badge-muted',
 };
 
@@ -50,7 +51,7 @@ function SuperAdminUsersPage() {
     status_aktif: true,
   });
 
-  // Super Admin tidak bisa ditambahkan/diberikan: pilihan role hanya Admin UPT, Dosen, Mahasiswa.
+  // Super Admin tidak bisa ditambahkan atau diberikan melalui kelola akun.
   // Saat mengedit akun Super Admin, role-nya ditampilkan tapi dikunci.
   const rolesDapatDipilih = roles.filter((r) => r.nama_role !== 'super_admin');
   const editSuperAdmin = modalEdit?.role === 'super_admin';
@@ -528,7 +529,7 @@ function SuperAdminUsersPage() {
                       onChange={handleFormChange}
                     >
                       <option value="mahasiswa">Mahasiswa</option>
-                      <option value="internal">Internal / Staf / Dosen</option>
+                      <option value="internal">Internal / Staf / Dosen / Penerjemah</option>
                       <option value="umum">Umum</option>
                     </select>
                   </div>
@@ -688,7 +689,7 @@ function SuperAdminUsersPage() {
                       onChange={handleFormChange}
                     >
                       <option value="mahasiswa">Mahasiswa</option>
-                      <option value="internal">Internal / Staf / Dosen</option>
+                      <option value="internal">Internal / Staf / Dosen / Penerjemah</option>
                       <option value="umum">Umum</option>
                     </select>
                   </div>
