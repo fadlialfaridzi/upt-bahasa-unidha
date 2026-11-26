@@ -54,7 +54,7 @@ export const DASHBOARDS = {
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/mahasiswa/pelatihan' },
       { label: 'Penerjemahan', icon: 'languages' },
       { label: 'Tagihan', icon: 'wallet', path: '/dashboard/mahasiswa/pelatihan?tab=tagihan' },
-      { label: 'Presensi & EWS', icon: 'qr' },
+      { label: 'Presensi & EWS', icon: 'qr', path: '/dashboard/mahasiswa/presensi-ews' },
       { label: 'Sertifikat', icon: 'award' },
     ],
   },

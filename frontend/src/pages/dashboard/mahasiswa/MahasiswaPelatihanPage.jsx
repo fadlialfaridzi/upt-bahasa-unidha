@@ -7,6 +7,7 @@ import { EmptyState, PageHeader } from '../../../components/dashboard/Widgets.js
 import { JENIS_PELATIHAN, TIPE_KELAS, formatRupiah, formatTanggal } from '../../../config/pelatihan.js';
 import DaftarPelatihanModal from './DaftarPelatihanModal.jsx';
 import UploadBuktiModal from './UploadBuktiModal.jsx';
+import MateriMahasiswaModal from './MateriMahasiswaModal.jsx';
 
 const STATUS_PENDAFTARAN_BADGE = {
   menunggu_pembayaran: { label: 'Menunggu Pembayaran', badge: 'badge-warning' },
@@ -24,25 +25,30 @@ const STATUS_CICILAN_BADGE = {
 function MahasiswaPelatihanPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const paramTab = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(paramTab === 'tagihan' || paramTab === 'saya' ? 'saya' : 'katalog');
+  const [activeTab, setActiveTab] = useState(
+    paramTab === 'tagihan' || paramTab === 'saya' ? 'saya' : paramTab === 'materi' ? 'materi' : 'katalog'
+  );
 
   useEffect(() => {
     const t = searchParams.get('tab');
     if (t === 'tagihan' || t === 'saya') setActiveTab('saya');
+    else if (t === 'materi') setActiveTab('materi');
     else if (t === 'katalog') setActiveTab('katalog');
   }, [searchParams]);
 
   const switchTab = (tabName) => {
     setActiveTab(tabName);
-    setSearchParams(tabName === 'saya' ? { tab: 'tagihan' } : {});
+    setSearchParams(tabName === 'saya' ? { tab: 'tagihan' } : tabName === 'materi' ? { tab: 'materi' } : {});
   };
   const [kelasTersedia, setKelasTersedia] = useState([]);
   const [pendaftaranSaya, setPendaftaranSaya] = useState([]);
+  const [kelasMateriSaya, setKelasMateriSaya] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Modals
   const [modalDaftar, setModalDaftar] = useState(null); // kelas object
   const [modalUpload, setModalUpload] = useState(null); // { tagihan, cicilan? }
+  const [modalMateri, setModalMateri] = useState(null); // { kelas, materi }
 
   // Filter & Search katalog
   const [search, setSearch] = useState('');
@@ -51,12 +57,14 @@ function MahasiswaPelatihanPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [resKatalog, resSaya] = await Promise.all([
+      const [resKatalog, resSaya, resMateri] = await Promise.all([
         api.get('/pelatihan'),
         api.get('/pelatihan/my-pendaftaran'),
+        api.get('/pelatihan/my-kelas-materi'),
       ]);
       setKelasTersedia(resKatalog.data.data || []);
       setPendaftaranSaya(resSaya.data.data || []);
+      setKelasMateriSaya(resMateri.data.data || []);
     } catch {
       toast.error('Gagal memuat data kelas pelatihan');
     } finally {
@@ -146,6 +154,32 @@ function MahasiswaPelatihanPage() {
           {pendaftaranSaya.length > 0 && (
             <span className="badge badge-success" style={{ fontSize: '0.72rem', padding: '2px 7px' }}>
               {pendaftaranSaya.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => switchTab('materi')}
+          style={{
+            padding: '10px 18px',
+            border: 'none',
+            borderBottom: activeTab === 'materi' ? '3px solid var(--brand-700)' : '3px solid transparent',
+            background: 'none',
+            color: activeTab === 'materi' ? 'var(--brand-800)' : 'var(--muted)',
+            fontWeight: activeTab === 'materi' ? 700 : 500,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <Icon name="file" size={18} />
+          <span>Kelas Terdaftar & Materi</span>
+          {kelasMateriSaya.length > 0 && (
+            <span className="badge badge-accent" style={{ fontSize: '0.72rem', padding: '2px 7px' }}>
+              {kelasMateriSaya.length}
             </span>
           )}
         </button>
@@ -268,6 +302,83 @@ function MahasiswaPelatihanPage() {
             </div>
           )}
         </div>
+      ) : activeTab === 'materi' ? (
+        /* ================= TAB 3: KELAS TERDAFTAR & MATERI BELAJAR ================= */
+        <div>
+          {kelasMateriSaya.length === 0 ? (
+            <EmptyState
+              icon="book"
+              title="Belum ada kelas terverifikasi"
+              text="Kelas yang telah divalidasi pembayarannya oleh admin akan muncul di sini. Anda dapat mengakses seluruh materi pembelajaran yang diunggah oleh dosen pengajar."
+            />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+              {kelasMateriSaya.map((km) => {
+                const k = km.kelas;
+                const pengajar = k.pengajar_kelas?.map((pk) => pk.pengajar?.user?.nama).filter(Boolean) || [];
+                const materiList = k.materi || [];
+
+                return (
+                  <div
+                    key={km.id_pendaftaran}
+                    style={{
+                      background: '#fff',
+                      borderRadius: '12px',
+                      border: '1px solid var(--line)',
+                      padding: '20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                        <span className="badge badge-accent" style={{ fontSize: '0.75rem' }}>
+                          {JENIS_PELATIHAN[k.jenis_pelatihan] || k.jenis_pelatihan}
+                        </span>
+                        <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                          Terverifikasi / Aktif
+                        </span>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.2rem', color: 'var(--brand-900)', margin: '4px 0 10px', fontWeight: 700 }}>
+                        {k.nama_kelas}
+                      </h3>
+
+                      <div style={{ display: 'grid', gap: '6px', fontSize: '0.84rem', color: 'var(--ink-2)', marginBottom: '16px' }}>
+                        <div>📅 <strong>Total Pertemuan:</strong> {k.jumlah_pertemuan} kali</div>
+                        {pengajar.length > 0 && <div>👨‍🏫 <strong>Dosen Pengajar:</strong> {pengajar.join(', ')}</div>}
+                        <div>
+                          📚 <strong>Materi Pembelajaran:</strong>{' '}
+                          <span style={{ fontWeight: 600, color: materiList.length > 0 ? 'var(--brand-800)' : 'var(--muted)' }}>
+                            {materiList.length} Dokumen Tersedia
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--line)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                        Status: <strong style={{ color: '#16a34a' }}>Siap Belajar</strong>
+                      </span>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        onClick={() => setModalMateri({ kelas: k, materi: materiList })}
+                      >
+                        <Icon name="file" size={16} />
+                        <span>Buka Materi ({materiList.length})</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       ) : (
         /* ================= TAB 2: PENDAFTARAN & TAGIHAN SAYA ================= */
         <div>
@@ -313,6 +424,24 @@ function MahasiswaPelatihanPage() {
                         <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
                           Terdaftar pada: {formatTanggal(item.tanggal_daftar)} · {item.kelas.jumlah_pertemuan} Pertemuan
                         </span>
+                        {item.status_pendaftaran === 'terverifikasi' && (
+                          <div style={{ marginTop: '8px' }}>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
+                              onClick={() => {
+                                const km = kelasMateriSaya.find((m) => m.id_pendaftaran === item.id_pendaftaran);
+                                setModalMateri({
+                                  kelas: item.kelas,
+                                  materi: km?.kelas?.materi || [],
+                                });
+                              }}
+                            >
+                              <Icon name="file" size={14} /> Buka Materi Kelas
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div style={{ textAlign: 'right' }}>
@@ -501,6 +630,15 @@ function MahasiswaPelatihanPage() {
           cicilan={modalUpload.cicilan}
           onClose={() => setModalUpload(null)}
           onSuccess={handleUploadSuccess}
+        />
+      )}
+
+      {/* Modal Materi Pembelajaran */}
+      {modalMateri && (
+        <MateriMahasiswaModal
+          kelas={modalMateri.kelas}
+          materi={modalMateri.materi}
+          onClose={() => setModalMateri(null)}
         />
       )}
     </>

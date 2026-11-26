@@ -30,6 +30,16 @@ const filterBukti = (req, file, cb) => {
   }
 };
 
+const filterMateri = (req, file, cb) => {
+  const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.txt', '.zip', '.rar', '.jpg', '.jpeg', '.png', '.mp3', '.mp4'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExtensions.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Format file materi tidak didukung (gunakan PDF, Word, PPT, Audio/Video, Gambar, atau ZIP)'), false);
+  }
+};
+
 export const upload = multer({
   storage,
   fileFilter,
@@ -40,4 +50,10 @@ export const uploadBukti = multer({
   storage,
   fileFilter: filterBukti,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
+
+export const uploadMateri = multer({
+  storage,
+  fileFilter: filterMateri,
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
 });
