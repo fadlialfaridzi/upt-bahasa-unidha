@@ -181,6 +181,14 @@ export const ajukanRevisiTerjemahan = async (req, res) => {
           keterangan: 'Pemohon mengajukan revisi hasil terjemahan.',
         },
       });
+      await tx.notifikasi.create({
+        data: {
+          id_pengguna: job.id_penerjemah,
+          jenis: 'terjemahan_revisi',
+          judul: 'Peserta mengajukan revisi',
+          pesan: `Peserta meminta revisi untuk pesanan #${idPesanan}: ${alasan}`.slice(0, 255),
+        },
+      });
       await catatAudit(tx, req, {
         aksi: 'pengajuan_revisi_terjemahan',
         entitas: 'pesanan_terjemahan',
