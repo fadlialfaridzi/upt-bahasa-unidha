@@ -65,8 +65,13 @@ function DashboardLayout() {
       || item.judul?.includes('verifikasi')
       || item.judul?.includes('pembayaran');
     const isAdmin = user?.role === 'staf_upt';
+    const isTranslationNotification = item.jenis?.startsWith('terjemahan_');
     let target = '/dashboard/mahasiswa';
-    if (item.jenis === 'pembayaran_toefl') {
+    if (isTranslationNotification) {
+      target = user?.role === 'penerjemah'
+        ? '/dashboard/penerjemah'
+        : '/dashboard/mahasiswa/terjemahan';
+    } else if (item.jenis === 'pembayaran_toefl') {
       target = isAdmin ? '/dashboard/admin/toefl/pembayaran' : '/dashboard/mahasiswa/toefl?mode=lanjut';
     } else if (isPaymentNotification && isAdmin) {
       target = '/dashboard/admin/pembayaran';
@@ -235,7 +240,7 @@ function DashboardLayout() {
                       <p>Belum ada notifikasi.</p>
                     ) : notifications.slice(0, 8).map((item) => (
                       <button type="button" key={item.id_notifikasi} className={!item.sudah_dibaca ? 'unread' : ''} onClick={() => openNotification(item)}>
-                        <span className="notification-icon"><Icon name="wallet" size={16} /></span>
+                        <span className="notification-icon"><Icon name={item.jenis?.startsWith('terjemahan_') ? 'languages' : 'wallet'} size={16} /></span>
                         <span><strong>{item.judul}</strong><small>{item.pesan}</small></span>
                       </button>
                     ))}
