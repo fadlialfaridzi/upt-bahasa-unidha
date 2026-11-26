@@ -522,13 +522,276 @@ export const uploadBuktiPembayaran = async (req, res) => {
       });
 
       return pembayaranRecord;
+  });
+
+  res.json({
+    message: 'Bukti pembayaran berhasil diunggah! Menunggu validasi admin.',
+    data: hasil,
+  });
+} catch (error) {
+  res.status(500).json({ message: 'Gagal mengunggah bukti pembayaran', error: error.message });
+}
+};
+
+/**
+ * GET /api/pelatihan/my-kelas-materi
+ * Daftar kelas terverifikasi (pembayaran telah divalidasi admin) beserta materi belajar yang diunggah dosen
+ */
+export const getMyKelasMateri = async (req, res) => {
+  try {
+    const idPengguna = req.user.id;
+    const pendaftaran = await prisma.pendaftaran_pelatihan.findMany({
+      where: {
+        id_pengguna: idPengguna,
+        status: 'terverifikasi',
+      },
+      include: {
+        kelas_pelatihan: {
+          include: {
+            materi: {
+              orderBy: { tanggal_unggah: 'desc' },
+            },
+            pertemuan_kelas: {
+              orderBy: { pertemuan_ke: 'asc' },
+              select: {
+                id_pertemuan: true,
+                pertemuan_ke: true,
+                tanggal: true,
+                jam_mulai: true,
+                jam_selesai: true,
+                ruang: true,
+                topik: true,
+                pengajar: { select: { nama_lengkap: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { tanggal_daftar: 'desc' },
     });
 
-    res.json({
-      message: 'Bukti pembayaran berhasil diunggah! Menunggu validasi admin.',
-      data: hasil,
+    const data = pendaftaran.map((p) => {
+      const k = p.kelas_pelatihan;
+      const pengajarList = [...new Set(k.pertemuan_kelas.map((pt) => pt.pengajar?.nama_lengkap).filter(Boolean))];
+
+      return {
+        id_pendaftaran: p.id_pendaftaran,
+        tanggal_daftar: p.tanggal_daftar,
+        status: p.status,
+        kelas: {
+          id_kelas: k.id_kelas,
+          nama_kelas: k.nama_kelas,
+          jenis_pelatihan: k.jenis_pelatihan,
+          tipe_kelas: k.tipe_kelas,
+          jumlah_pertemuan: k.jumlah_pertemuan,
+          tanggal_mulai: k.tanggal_mulai,
+          pengajar: pengajarList,
+          total_materi: k.materi.length,
+          materi: k.materi.map((m) => ({
+            id_materi: m.id_materi,
+            judul: m.judul,
+            file_path: m.file_path,
+            tanggal_unggah: m.tanggal_unggah,
+          })),
+          pertemuan: k.pertemuan_kelas,
+        },
+      };
+    });
+
+    res.json({ data });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengambil materi kelas terdaftar', error: error.message });
+  }
+};
+
+/**
+ * POST /api/pelatihan/presensi/scan
+ * Mahasiswa melakukan pengambilan absen dengan memasukkan / scan token QR
+ */
+export const scanPresensiMahasiswa = async (req, res) => {
+  try {
+    const idPengguna = req.user.id;
+    const token = String(req.body.token_qr ?? '').trim();
+
+    if (!token) {
+      return res.status(400).json({ message: 'Kode QR / token presensi wajib diisi' });
+    }
+
+    // Cari sesi pertemuan yang sedang dibuka dengan token ini
+    const pertemuan = await prisma.pertemuan_kelas.findFirst({
+      where: {
+        token_qr: token,
+        status_presensi: 'dibuka',
+      },
+      include: {
+        kelas_pelatihan: { select: { id_kelas: true, nama_kelas: true } },
+        pengajar: { select: { nama_lengkap: true } },
+      },
+    });
+
+    if (!pertemuan) {
+      return res.status(404).json({
+        message: 'Kode QR presensi tidak valid, salah, atau sesi presensi telah ditutup oleh dosen.',
+      });
+    }
+
+    // Pastikan mahasiswa terdaftar dan pembayarannya terverifikasi di kelas ini
+    const pendaftaran = await prisma.pendaftaran_pelatihan.findFirst({
+      where: {
+        id_pengguna: idPengguna,
+        id_kelas: pertemuan.id_kelas,
+        status: 'terverifikasi',
+      },
+    });
+
+    if (!pendaftaran) {
+      return res.status(403).json({
+        message: 'Anda tidak terdaftar atau pembayaran belum terverifikasi untuk kelas ini.',
+      });
+    }
+
+    // Cek apakah mahasiswa sudah melakukan presensi sebelumnya
+    const presensiAda = await prisma.presensi.findUnique({
+      where: {
+        id_pertemuan_id_pendaftaran: {
+          id_pertemuan: pertemuan.id_pertemuan,
+          id_pendaftaran: pendaftaran.id_pendaftaran,
+        },
+      },
+    });
+
+    if (presensiAda) {
+      return res.status(409).json({
+        message: `Anda sudah tercatat ${presensiAda.status.toUpperCase()} pada pertemuan ke-${pertemuan.pertemuan_ke} kelas ${pertemuan.kelas_pelatihan.nama_kelas}.`,
+        data: presensiAda,
+      });
+    }
+
+    // Catat presensi hadir
+    const presensiBaru = await prisma.presensi.create({
+      data: {
+        id_pertemuan: pertemuan.id_pertemuan,
+        id_pendaftaran: pendaftaran.id_pendaftaran,
+        status: 'hadir',
+        waktu_scan: new Date(),
+      },
+    });
+
+    res.status(201).json({
+      message: `Presensi berhasil! Anda tercatat HADIR pada pertemuan ke-${pertemuan.pertemuan_ke} (${pertemuan.kelas_pelatihan.nama_kelas}).`,
+      data: {
+        ...presensiBaru,
+        kelas: pertemuan.kelas_pelatihan.nama_kelas,
+        pertemuan_ke: pertemuan.pertemuan_ke,
+        dosen: pertemuan.pengajar.nama_lengkap,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Gagal mengunggah bukti pembayaran', error: error.message });
+    res.status(500).json({ message: 'Gagal melakukan pengambilan absensi', error: error.message });
+  }
+};
+
+/**
+ * GET /api/pelatihan/my-presensi-ews
+ * Detail absensi dan Early Warning System (EWS) kehadiran mahasiswa pada seluruh kelas terdaftar
+ */
+export const getMyPresensiEws = async (req, res) => {
+  try {
+    const idPengguna = req.user.id;
+    const AMBANG_EWS = 75; // Minimal kehadiran 75%
+
+    // Ambil seluruh pendaftaran terverifikasi milik mahasiswa
+    const pendaftaranList = await prisma.pendaftaran_pelatihan.findMany({
+      where: {
+        id_pengguna: idPengguna,
+        status: 'terverifikasi',
+      },
+      include: {
+        kelas_pelatihan: {
+          include: {
+            pertemuan_kelas: {
+              orderBy: { pertemuan_ke: 'asc' },
+              include: {
+                pengajar: { select: { nama_lengkap: true } },
+                presensi: {
+                  where: { pendaftaran_pelatihan: { id_pengguna: idPengguna } },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { tanggal_daftar: 'desc' },
+    });
+
+    const data = pendaftaranList.map((p) => {
+      const k = p.kelas_pelatihan;
+      const pertemuan = k.pertemuan_kelas;
+
+      // Pertemuan yang presensinya sudah dibuka atau selesai
+      const sesiDibuka = pertemuan.filter((pt) => pt.status_presensi !== null);
+      const totalSesiDibuka = sesiDibuka.length;
+
+      // Hitung kehadiran mahasiswa ini
+      let hadir = 0;
+      let izin = 0;
+      let alpha = 0;
+
+      const detailPertemuan = pertemuan.map((pt) => {
+        const presensiRecord = pt.presensi[0] ?? null;
+
+        if (presensiRecord?.status === 'hadir') hadir++;
+        else if (presensiRecord?.status === 'izin') izin++;
+        else if (pt.status_presensi === 'ditutup' && !presensiRecord) alpha++;
+
+        return {
+          id_pertemuan: pt.id_pertemuan,
+          pertemuan_ke: pt.pertemuan_ke,
+          tanggal: pt.tanggal,
+          jam_mulai: pt.jam_mulai,
+          jam_selesai: pt.jam_selesai,
+          ruang: pt.ruang,
+          topik: pt.topik,
+          pengajar: pt.pengajar?.nama_lengkap,
+          status_presensi_sesi: pt.status_presensi, // 'dibuka' | 'ditutup' | null
+          token_qr_aktif: pt.status_presensi === 'dibuka',
+          status_kehadiran_saya: presensiRecord?.status ?? (pt.status_presensi === 'dibuka' ? 'belum_absen' : pt.status_presensi === 'ditutup' ? 'tidak_hadir' : 'belum_mulai'),
+          waktu_scan: presensiRecord?.waktu_scan ?? null,
+        };
+      });
+
+      const persentase = totalSesiDibuka > 0 ? Math.round((hadir / totalSesiDibuka) * 100) : 100;
+      const statusEws = persentase < AMBANG_EWS ? 'peringatan' : 'aman';
+
+      return {
+        id_pendaftaran: p.id_pendaftaran,
+        kelas: {
+          id_kelas: k.id_kelas,
+          nama_kelas: k.nama_kelas,
+          jenis_pelatihan: k.jenis_pelatihan,
+          tipe_kelas: k.tipe_kelas,
+          jumlah_pertemuan: k.jumlah_pertemuan,
+        },
+        rekap: {
+          total_pertemuan: k.jumlah_pertemuan,
+          sesi_berjalan: totalSesiDibuka,
+          hadir,
+          izin,
+          alpha,
+          persentase,
+          ambang_ews: AMBANG_EWS,
+          status_ews: statusEws,
+          pesan_ews:
+            statusEws === 'peringatan'
+              ? `Peringatan Dini (EWS): Kehadiran Anda saat ini ${persentase}% (di bawah batas minimum ${AMBANG_EWS}%). Tingkatkan kehadiran Anda agar memenuhi syarat kelulusan sertifikat!`
+              : `Kehadiran Anda memenuhi standar minimum (${persentase}% >= ${AMBANG_EWS}%). Pertahankan!`,
+        },
+        detail_pertemuan: detailPertemuan,
+      };
+    });
+
+    res.json({ data, ambang_default: AMBANG_EWS });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal mengambil rekap presensi dan EWS', error: error.message });
   }
 };

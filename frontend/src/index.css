@@ -1549,10 +1549,10 @@ input {
 /* Modal: gaya dasar (.modal-overlay, .modal-box, .modal-header, .modal-body, .modal-footer)
    ada di bagian "Modal styles" (halaman Kelola Akun). Di sini hanya varian ukuran & tambahan. */
 .modal-box.modal-sm {
-  max-width: 440px;
+  max-width: min(440px, 95vw);
 }
 .modal-box.modal-lg {
-  max-width: 720px;
+  max-width: min(780px, 95vw);
 }
 .modal-header {
   gap: 16px;
@@ -3506,6 +3506,7 @@ input {
 .modal-body {
   padding: 24px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal-footer {
