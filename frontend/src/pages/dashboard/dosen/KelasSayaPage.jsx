@@ -1,15 +1,17 @@
 // Kelas saya (Dosen): semua kelas yang diampu beserta pertemuannya - bagian #70
 import { useCallback, useEffect, useState } from 'react';
 import api from '../../../services/api.js';
+import Icon from '../../../components/ui/Icon.jsx';
 import { EmptyState, PageHeader } from '../../../components/dashboard/Widgets.jsx';
 import { Meter } from '../../../components/dashboard/Pelatihan.jsx';
 import {
   JENIS_PELATIHAN, STATUS_KELAS, STATUS_PRESENSI, STATUS_WAKTU, TIPE_KELAS, formatTanggal,
 } from '../../../config/pelatihan.js';
+import KelolaPertemuanModal from './KelolaPertemuanModal.jsx';
 
 const TAMPIL_AWAL = 5;
 
-function KelasCard({ k }) {
+function KelasCard({ k, onKelolaPertemuan }) {
   const [semua, setSemua] = useState(false);
   // Default: tampilkan mulai dari pertemuan yang belum selesai
   const idxBerikut = Math.max(0, k.pertemuan.findIndex((p) => p.status !== 'selesai'));
@@ -23,7 +25,17 @@ function KelasCard({ k }) {
           <h2 className="panel-title">{k.nama_kelas}</h2>
           <p className="panel-sub">{JENIS_PELATIHAN[k.jenis_pelatihan]} · {TIPE_KELAS[k.tipe_kelas]}</p>
         </div>
-        <span className={`badge ${status.badge}`}>{status.label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span className={`badge ${status.badge}`}>{status.label}</span>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            onClick={() => onKelolaPertemuan(k)}
+          >
+            <Icon name="qr" size={15} /> Kelola Pertemuan & Presensi QR
+          </button>
+        </div>
       </header>
 
       <div className="kelas-card-stats">
@@ -78,6 +90,7 @@ function KelasCard({ k }) {
 function KelasSayaPage() {
   const [kelas, setKelas] = useState(null);
   const [gagal, setGagal] = useState(false);
+  const [modalKelas, setModalKelas] = useState(null);
 
   const load = useCallback(async () => {
     setGagal(false);
@@ -112,7 +125,19 @@ function KelasSayaPage() {
           <EmptyState icon="graduation" title="Belum ada kelas" text="Kelas akan muncul setelah admin menjadwalkan Anda sebagai pengajar." />
         </section>
       ) : (
-        <div className="stack">{kelas.map((k) => <KelasCard key={k.id_kelas} k={k} />)}</div>
+        <div className="stack">
+          {kelas.map((k) => (
+            <KelasCard key={k.id_kelas} k={k} onKelolaPertemuan={(item) => setModalKelas(item)} />
+          ))}
+        </div>
+      )}
+
+      {modalKelas && (
+        <KelolaPertemuanModal
+          kelas={modalKelas}
+          onClose={() => setModalKelas(null)}
+          onUpdated={load}
+        />
       )}
     </>
   );

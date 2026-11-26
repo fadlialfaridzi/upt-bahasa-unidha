@@ -39,8 +39,16 @@ function MahasiswaDashboard() {
     {
       icon: 'book',
       title: 'Kelas Pelatihan Bahasa',
-      text: 'Daftar kelas baru, bayar lunas atau cicilan 3x',
+      text: 'Daftar kelas baru, bayar lunas atau cicilan 3x & materi belajar',
       path: '/dashboard/mahasiswa/pelatihan',
+      badge: 'Aktif',
+      badgeClass: 'badge-success',
+    },
+    {
+      icon: 'qr',
+      title: 'Presensi & EWS',
+      text: 'Input token presensi perkuliahan & pantau ambang batas kehadiran 75%',
+      path: '/dashboard/mahasiswa/presensi-ews',
       badge: 'Aktif',
       badgeClass: 'badge-success',
     },

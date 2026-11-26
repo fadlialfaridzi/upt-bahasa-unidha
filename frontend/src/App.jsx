@@ -20,6 +20,7 @@ import AdminDashboard from './pages/dashboard/AdminDashboard.jsx';
 import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
 import MahasiswaPelatihanPage from './pages/dashboard/mahasiswa/MahasiswaPelatihanPage.jsx';
+import MahasiswaPresensiEwsPage from './pages/dashboard/mahasiswa/MahasiswaPresensiEwsPage.jsx';
 import MahasiswaTerjemahanPage from './pages/dashboard/mahasiswa/MahasiswaTerjemahanPage.jsx';
 import TagihanToeflPage from './pages/dashboard/mahasiswa/TagihanToeflPage.jsx';
 import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
@@ -68,6 +69,7 @@ function App() {
             <Route path="dosen/penerjemahan" element={<Navigate to="/dashboard/penerjemah" replace />} />
             <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
             <Route path="mahasiswa/pelatihan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPelatihanPage /></RoleRoute>} />
+            <Route path="mahasiswa/presensi-ews" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPresensiEwsPage /></RoleRoute>} />
             <Route path="mahasiswa/terjemahan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaTerjemahanPage /></RoleRoute>} />
             <Route path="mahasiswa/toefl/tagihan" element={<RoleRoute dashboard="mahasiswa"><TagihanToeflPage /></RoleRoute>} />
             <Route path="mahasiswa/toefl" element={<RoleRoute dashboard="mahasiswa"><ToeflDaftarPage /></RoleRoute>} />
