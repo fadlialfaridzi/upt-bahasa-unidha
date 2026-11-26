@@ -277,6 +277,21 @@ export const ubahStatusJobOrder = async (req, res) => {
         if (!updated.count) {
           throw Object.assign(new Error('Status job order sudah berubah. Muat ulang halaman.'), { status: 409 });
         }
+        await tx.riwayat_status_terjemahan.create({
+          data: {
+            id_pesanan: job.id_pesanan,
+            status: 'dialokasikan',
+            keterangan: 'Penerjemah menerima penugasan.',
+          },
+        });
+        await tx.notifikasi.create({
+          data: {
+            id_pengguna: job.pesanan_terjemahan.id_pemohon,
+            jenis: 'terjemahan_proses',
+            judul: 'Penugasan penerjemah diterima',
+            pesan: `Penerjemah telah menerima penugasan pesanan #${job.id_pesanan}.`,
+          },
+        });
         await catatAudit(tx, req, {
           aksi: 'terima_job',
           entitas: 'job_order',

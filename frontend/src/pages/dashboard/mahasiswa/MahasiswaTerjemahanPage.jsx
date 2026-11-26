@@ -28,6 +28,54 @@ const formatRupiah = (value) => value == null
   ? 'Belum ditentukan'
   : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value));
 
+const labelRiwayat = (event) => {
+  if (event.status === 'dialokasikan') {
+    return event.keterangan?.toLocaleLowerCase('id-ID').includes('menerima')
+      ? 'Penugasan diterima penerjemah'
+      : 'Penerjemah ditugaskan';
+  }
+  if (event.status === 'dikerjakan') {
+    return event.keterangan?.toLocaleLowerCase('id-ID').includes('revisi')
+      ? 'Revisi sedang dikerjakan'
+      : 'Sedang dikerjakan';
+  }
+  if (event.status === 'selesai') {
+    return event.keterangan?.toLocaleLowerCase('id-ID').includes('revisi')
+      ? 'Hasil revisi tersedia'
+      : 'Hasil terjemahan tersedia';
+  }
+  return STATUS[event.status]?.label || event.status;
+};
+
+const buatTimeline = (item) => {
+  const timeline = [{
+    id: `ajuan-${item.id_pesanan}`,
+    label: 'Pesanan diajukan',
+    detail: 'Pengajuan Anda telah tercatat.',
+    waktu: item.tanggal_ajuan,
+  }];
+
+  if (item.job_order?.tanggal_alokasi) {
+    timeline.push({
+      id: `alokasi-${item.job_order.id_job}`,
+      label: 'Penerjemah ditugaskan',
+      detail: 'Pesanan telah dialokasikan kepada penerjemah.',
+      waktu: item.job_order.tanggal_alokasi,
+    });
+  }
+
+  for (const event of item.riwayat_status_terjemahan || []) {
+    timeline.push({
+      id: `riwayat-${event.id_riwayat}`,
+      label: labelRiwayat(event),
+      detail: event.keterangan,
+      waktu: event.waktu,
+    });
+  }
+
+  return timeline.sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+};
+
 function MahasiswaTerjemahanPage() {
   const [pesanan, setPesanan] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -150,6 +198,7 @@ function MahasiswaTerjemahanPage() {
               const job = item.job_order;
               const canRequestRevision = item.status === 'selesai' && job?.status === 'selesai' && job.ada_hasil;
               const formId = `revision-form-${item.id_pesanan}`;
+              const timeline = buatTimeline(item);
 
               return (
                 <article className="student-translation-card" key={item.id_pesanan}>
@@ -167,6 +216,28 @@ function MahasiswaTerjemahanPage() {
                     <span><strong>Halaman</strong>{item.jumlah_halaman ?? 'Belum ditentukan'}</span>
                     <span><strong>Estimasi biaya</strong>{formatRupiah(item.estimasi_biaya)}</span>
                   </div>
+
+                  <details className="student-translation-timeline">
+                    <summary>
+                      <span>
+                        <strong>Progres pesanan</strong>
+                        <small>{status.label}</small>
+                      </span>
+                      <span className="student-translation-timeline-count">{timeline.length} tahap</span>
+                    </summary>
+                    <ol>
+                      {timeline.map((event) => (
+                        <li key={event.id}>
+                          <span className="student-translation-timeline-dot" />
+                          <div>
+                            <strong>{event.label}</strong>
+                            {event.detail && <p>{event.detail}</p>}
+                            <small>{formatTanggal(event.waktu)}</small>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
 
                   {job?.versi_hasil > 0 && (
                     <div className="student-translation-result">
