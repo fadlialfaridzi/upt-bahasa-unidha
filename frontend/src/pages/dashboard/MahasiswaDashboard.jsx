@@ -68,6 +68,14 @@ function MahasiswaDashboard() {
       badge: 'Layanan',
       badgeClass: 'badge-muted',
     },
+    {
+      icon: 'history',
+      title: 'Status Penerjemahan',
+      text: 'Pantau pesanan dan ajukan revisi hasil',
+      path: '/dashboard/mahasiswa/terjemahan',
+      badge: 'Pesanan saya',
+      badgeClass: 'badge-accent',
+    },
   ];
 
   return (

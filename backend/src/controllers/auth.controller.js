@@ -20,6 +20,11 @@ const toUserResponse = (u) => ({
   nama:          u.nama_lengkap,     // alias untuk frontend lama
   email:         u.email,
   no_hp:         u.no_hp,
+  nim:           u.nim,
+  program_studi: u.program_studi,
+  tempat_lahir:  u.tempat_lahir,
+  tanggal_lahir: u.tanggal_lahir,
+  jenis_kelamin: u.jenis_kelamin,
   tipe_pengguna: u.tipe_pengguna,
   role:          u.role.nama_role,
   role_ekstra:   u.role_ekstra?.nama_role ?? null,
@@ -117,6 +122,33 @@ export const getProfile = async (req, res) => {
     res.json({ data: { ...toUserResponse(user), created_at: user.created_at } });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil profil', error: error.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const allowed = ['nama_lengkap', 'nim', 'program_studi', 'no_hp', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin'];
+    const data = {};
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) data[field] = req.body[field] === '' ? null : req.body[field];
+    }
+    if (data.nama_lengkap !== undefined) {
+      data.nama_lengkap = String(data.nama_lengkap).trim();
+      if (data.nama_lengkap.length < 3) return res.status(400).json({ message: 'Nama lengkap minimal 3 karakter' });
+    }
+    if (data.no_hp !== undefined && data.no_hp && !/^[0-9+\s-]{8,25}$/.test(data.no_hp)) {
+      return res.status(400).json({ message: 'Nomor WhatsApp tidak valid' });
+    }
+    if (data.tanggal_lahir) data.tanggal_lahir = new Date(data.tanggal_lahir);
+
+    const user = await prisma.pengguna.update({
+      where: { id_pengguna: req.user.id },
+      data,
+      include: { role: true, role_ekstra: true },
+    });
+    res.json({ message: 'Profil berhasil diperbarui', data: toUserResponse(user) });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal memperbarui profil', error: error.message });
   }
 };
 

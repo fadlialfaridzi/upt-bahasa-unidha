@@ -1,13 +1,14 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-// Role akun hanya 4 (lihat migrasi 20261113140000_sederhanakan_role). ID lama dipertahankan.
 const ROLES = [
   { id_role: 1, nama_role: 'peserta', keterangan: 'Mahasiswa atau peserta umum' },
   { id_role: 3, nama_role: 'pengajar', keterangan: 'Dosen: mengajar kelas pelatihan' },
   { id_role: 4, nama_role: 'staf_upt', keterangan: 'Admin UPT: kelola layanan, jadwal, pembayaran, sertifikat, dan persetujuan' },
+  { id_role: 5, nama_role: 'penerjemah', keterangan: 'Dosen penerjemah: mengelola job order layanan penerjemahan' },
   { id_role: 6, nama_role: 'super_admin', keterangan: 'Tim IT: kelola akun, hak akses, dan pemeliharaan sistem' },
 ];
 
@@ -32,11 +33,12 @@ const PERTANYAAN_KUESIONER = [
 
 const DEMO_PASSWORD = 'password123';
 
-// id_role: 1 peserta, 3 pengajar, 4 staf_upt, 6 super_admin
+// id_role: 1 peserta, 3 pengajar, 4 staf_upt, 5 penerjemah, 6 super_admin
 const DEMO_ACCOUNTS = [
   { email: 'superadmin@uptbahasa.ac.id', username: 'superadmin', nama_lengkap: 'Tim IT UPT Bahasa', id_role: 6, tipe_pengguna: 'internal', no_hp: '081200000001' },
   { email: 'admin@uptbahasa.ac.id', username: 'admin', nama_lengkap: 'Rina Kartika', id_role: 4, tipe_pengguna: 'internal', no_hp: '081200000002' },
   { email: 'dosen@uptbahasa.ac.id', username: 'dosen', nama_lengkap: 'Rizki Pratama', id_role: 3, tipe_pengguna: 'internal', no_hp: '081200000003' },
+  { email: 'penerjemah@uptbahasa.ac.id', username: 'penerjemah', nama_lengkap: 'Dosen Penerjemah UPT', id_role: 5, tipe_pengguna: 'internal', no_hp: '081200000005' },
   {
     email: 'mahasiswa@uptbahasa.ac.id', username: 'mahasiswa', nama_lengkap: 'Nadia Amelia', id_role: 1,
     tipe_pengguna: 'mahasiswa', nim: '2024102018', program_studi: 'Sistem Informasi', no_hp: '081200000004',
