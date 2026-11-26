@@ -26,6 +26,15 @@ export const getPesananTerjemahanSaya = async (req, res) => {
         estimasi_hari: true,
         status: true,
         tanggal_ajuan: true,
+        riwayat_status_terjemahan: {
+          orderBy: { waktu: 'asc' },
+          select: {
+            id_riwayat: true,
+            status: true,
+            keterangan: true,
+            waktu: true,
+          },
+        },
         tarif_penerjemahan: {
           select: {
             jenis_dokumen: true,
@@ -37,6 +46,7 @@ export const getPesananTerjemahanSaya = async (req, res) => {
           select: {
             id_job: true,
             status: true,
+            tanggal_alokasi: true,
             file_hasil_path: true,
             versi_hasil: true,
             catatan_revisi: true,
@@ -52,6 +62,7 @@ export const getPesananTerjemahanSaya = async (req, res) => {
         ? {
           id_job: job.id_job,
           status: job.status,
+          tanggal_alokasi: job.tanggal_alokasi,
           ada_hasil: Boolean(job.file_hasil_path),
           versi_hasil: job.versi_hasil,
           catatan_revisi: job.catatan_revisi,
