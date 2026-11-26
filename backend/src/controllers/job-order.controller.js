@@ -217,6 +217,14 @@ export const uploadHasilJobOrder = async (req, res) => {
             : 'Hasil terjemahan versi 1 diunggah.',
         },
       });
+      await tx.notifikasi.create({
+        data: {
+          id_pengguna: job.pesanan_terjemahan.id_pemohon,
+          jenis: 'terjemahan_hasil',
+          judul: unggahRevisi ? 'Hasil revisi tersedia' : 'Hasil terjemahan tersedia',
+          pesan: `Penerjemah telah mengunggah hasil versi ${versiBerikutnya} untuk pesanan #${job.id_pesanan}. Buka Penerjemahan Saya untuk mengunduhnya.`,
+        },
+      });
       await catatAudit(tx, req, {
         aksi: unggahRevisi ? 'unggah_hasil_revisi' : 'unggah_hasil_terjemahan',
         entitas: 'job_order',
@@ -306,6 +314,16 @@ export const ubahStatusJobOrder = async (req, res) => {
             keterangan: mulaiRevisi ? 'Penerjemah mulai mengerjakan revisi.' : 'Penerjemah mulai mengerjakan terjemahan.',
           },
         });
+        if (mulaiPekerjaan) {
+          await tx.notifikasi.create({
+            data: {
+              id_pengguna: job.pesanan_terjemahan.id_pemohon,
+              jenis: 'terjemahan_proses',
+              judul: 'Pesanan terjemahan mulai dikerjakan',
+              pesan: `Penerjemah telah mulai ${mulaiRevisi ? 'memperbaiki' : 'menerjemahkan'} pesanan #${job.id_pesanan}.`,
+            },
+          });
+        }
         await catatAudit(tx, req, {
           aksi: mulaiRevisi ? 'mulai_revisi_terjemahan' : 'mulai_terjemahan',
           entitas: 'job_order',
