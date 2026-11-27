@@ -36,53 +36,147 @@ const PESERTA = [
   { kunci: 'dewi', nama_lengkap: 'Dewi Anggraini', nim: '2022104030', no_hp: '081378812200', jenis_kelamin: 'P', program_studi: 'Hukum' },
 ];
 
-// unggahJam = berapa jam lalu bukti diunggah; bayar = nominal yang ditransfer (bila beda dari tagihan).
+// unggahJam = berapa jam lalu bukti diunggah. Nominal pembayaran = nominal tagihan/cicilan (sama seperti alur unggah asli).
 const SKENARIO = [
   { peserta: 'nadia', kelas: 'conv', cicilan: 3, termin: 1, unggahJam: 2 },
   { peserta: 'andi', kelas: 'conv', unggahJam: 5 },
   { peserta: 'siti', kelas: 'ielts', cicilan: 2, termin: 2, unggahJam: 20 },
-  { peserta: 'budi', kelas: 'ielts', unggahJam: 30, bayar: 1000000 },
+  { peserta: 'budi', kelas: 'ielts', unggahJam: 30 },
   { peserta: 'fajar', kelas: 'conv', unggahJam: 50, hasil: 'terverifikasi' },
   { peserta: 'dewi', kelas: 'ielts', unggahJam: 70, hasil: 'ditolak', catatan: 'Bukti transfer buram, nomor referensi tidak terbaca. Silakan unggah ulang.' },
 ];
 
-const rupiah = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
-const tanggalPanjang = (d) =>
-  d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
 const escXml = (s) => String(s).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]);
+const pad2 = (n) => String(n).padStart(2, '0');
 
-/** Gambar bukti transfer tiruan (SVG) supaya pratinjau di modal Tinjau terlihat. */
+const SATUAN = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+function terbilang(n) {
+  n = Math.floor(n);
+  if (n < 12) return SATUAN[n];
+  const sisa = (x, m) => (x % m ? ' ' + terbilang(x % m) : '');
+  if (n < 20) return `${terbilang(n - 10)} belas`;
+  if (n < 100) return `${terbilang(Math.floor(n / 10))} puluh${sisa(n, 10)}`;
+  if (n < 200) return `seratus${sisa(n, 100)}`;
+  if (n < 1000) return `${terbilang(Math.floor(n / 100))} ratus${sisa(n, 100)}`;
+  if (n < 2000) return `seribu${sisa(n, 1000)}`;
+  if (n < 1e6) return `${terbilang(Math.floor(n / 1000))} ribu${sisa(n, 1000)}`;
+  return `${terbilang(Math.floor(n / 1e6))} juta${sisa(n, 1e6)}`;
+}
+
+/** Pecah teks per kata agar tiap baris <= maks karakter. */
+function bungkus(teks, maks) {
+  const baris = [''];
+  for (const kata of teks.split(' ')) {
+    const akhir = baris.length - 1;
+    if ((baris[akhir] + ' ' + kata).trim().length > maks) baris.push(kata);
+    else baris[akhir] = (baris[akhir] + ' ' + kata).trim();
+  }
+  return baris;
+}
+
+/**
+ * Foto tiruan (SVG) slip setoran tunai kertas dari teller Bank Nagari di kampus Unidha,
+ * tergeletak di meja. Peserta membayar langsung di bank lalu memfoto slip ini.
+ */
 function buatBuktiSvg({ pengirim, nominal, waktu, referensi, keterangan, buram }) {
+  // Setoran di loket (jam layanan bank 08-15 WIB), sebelum peserta memfoto & mengunggah slip
+  const w = new Date(waktu.getTime() + 7 * JAM); // WIB
+  if (w.getUTCHours() < 15) w.setUTCDate(w.getUTCDate() - 1);
+  const h = [...referensi].reduce((x, c) => (x * 31 + c.charCodeAt(0)) % 9973, 7);
+  w.setUTCHours(8 + (h % 7), (h * 7) % 60, (h * 13) % 60);
+  const tgl = `${pad2(w.getUTCDate())}/${pad2(w.getUTCMonth() + 1)}/${w.getUTCFullYear()}`;
+  const jam = `${pad2(w.getUTCHours())}:${pad2(w.getUTCMinutes())}:${pad2(w.getUTCSeconds())}`;
+  const jumlah = `Rp ${Number(nominal).toLocaleString('id-ID')},00`;
+  const kata = terbilang(Number(nominal));
+  const ejaan = bungkus(`# ${kata.charAt(0).toUpperCase() + kata.slice(1)} rupiah #`, 46);
+
+  const MONO = 'font-family="Courier New, Courier, monospace"';
   const baris = [
-    ['Tanggal', tanggalPanjang(waktu)],
-    ['No. referensi', referensi],
-    ['Rekening asal', `${pengirim}`],
-    ['Bank tujuan', 'Bank Nagari Syariah'],
-    ['Keterangan', keterangan],
-  ];
-  const isi = baris
+    ['TANGGAL', tgl],
+    ['JAM', jam],
+    ['NO. REF', referensi],
+    ['PENYETOR', pengirim.toUpperCase()],
+    ['UNTUK', 'UPT BAHASA UNIDHA'],
+    ['BERITA', keterangan],
+    ['TELLER', 'TLR-03 / KAS UNIDHA'],
+  ]
     .map(([k, v], i) => {
-      const y = 262 + i * 44;
-      return `<text x="32" y="${y}" font-size="15" fill="#6b7280">${escXml(k)}</text>` +
-        `<text x="388" y="${y}" font-size="15" fill="#111827" text-anchor="end" font-weight="600">${escXml(v)}</text>` +
-        `<line x1="32" y1="${y + 16}" x2="388" y2="${y + 16}" stroke="#e5e7eb"/>`;
+      const y = 216 + i * 21;
+      return `<text x="86" y="${y}">${k}</text><text x="168" y="${y}">:</text><text x="180" y="${y}">${escXml(v)}</text>`;
     })
     .join('');
+
+  // Tepi bawah kertas bergerigi (sobekan dari printer slip)
+  let gerigi = '';
+  for (let x = 418; x >= 62; x -= 8) gerigi += ` L${x} ${x % 16 === 2 ? 604 : 598}`;
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="420" height="560" viewBox="0 0 420 560" font-family="Arial, Helvetica, sans-serif">
-  ${buram ? '<defs><filter id="b"><feGaussianBlur stdDeviation="2.6"/></filter></defs>' : ''}
-  <g ${buram ? 'filter="url(#b)"' : ''}>
-  <rect width="420" height="560" fill="#f3f4f6"/>
-  <rect x="12" y="12" width="396" height="536" rx="14" fill="#ffffff"/>
-  <rect x="12" y="12" width="396" height="70" rx="14" fill="#0f6b4f"/>
-  <rect x="12" y="60" width="396" height="22" fill="#0f6b4f"/>
-  <text x="32" y="55" font-size="20" fill="#ffffff" font-weight="700">Nagari Mobile</text>
-  <circle cx="210" cy="128" r="26" fill="#dcfce7"/>
-  <path d="M198 128 l8 8 l16 -16" stroke="#15803d" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="210" y="182" font-size="16" fill="#15803d" text-anchor="middle" font-weight="700">Transfer Berhasil</text>
-  <text x="210" y="220" font-size="28" fill="#111827" text-anchor="middle" font-weight="700">${escXml(rupiah(nominal))}</text>
-  ${isi}
-  <text x="210" y="520" font-size="12" fill="#9ca3af" text-anchor="middle">DATA DEMO - bukan bukti transfer asli</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="640" viewBox="0 0 480 640" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <linearGradient id="meja" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b7358"/><stop offset="1" stop-color="#5f4c3a"/>
+    </linearGradient>
+    <filter id="serat"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.35" numOctaves="2" seed="3"/>
+      <feColorMatrix values="0 0 0 0 0.2  0 0 0 0 0.13  0 0 0 0 0.07  0 0 0 0.35 0"/></filter>
+    <filter id="butir"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+      <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 0 0.3  0 0 0 0.12 0"/></filter>
+    <filter id="bayang" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="5" dy="9" stdDeviation="7" flood-color="#000" flood-opacity="0.4"/></filter>
+    <filter id="tinta"><feTurbulence baseFrequency="0.55" numOctaves="1" seed="11"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+    <radialGradient id="vignet" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.38"/>
+    </radialGradient>
+    <linearGradient id="cahaya" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.18"/><stop offset="0.6" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="kertas"><path d="M62 40 H418 V598${gerigi} Z"/></clipPath>
+    ${buram ? '<filter id="buram"><feGaussianBlur stdDeviation="2.4"/></filter>' : ''}
+  </defs>
+  <g ${buram ? 'filter="url(#buram)"' : ''}>
+    <rect width="480" height="640" fill="url(#meja)"/>
+    <rect width="480" height="640" filter="url(#serat)"/>
+    <g transform="rotate(-2.4 240 320)">
+      <path d="M62 40 H418 V598${gerigi} Z" fill="#fbf8f0" filter="url(#bayang)"/>
+      <g clip-path="url(#kertas)">
+        <rect x="62" y="40" width="356" height="570" filter="url(#butir)"/>
+        <rect x="62" y="40" width="356" height="570" fill="url(#cahaya)"/>
+      </g>
+      <g fill="#2d2a26">
+        <rect x="86" y="62" width="34" height="34" rx="7" fill="#1f6b45"/>
+        <text x="103" y="86" font-size="18" font-weight="700" fill="#fbf8f0" text-anchor="middle">N</text>
+        <text x="130" y="80" font-size="19" font-weight="700" fill="#1f6b45" letter-spacing="1">BANK NAGARI</text>
+        <text x="131" y="95" font-size="10" fill="#1f6b45" letter-spacing="4">SYARIAH</text>
+        <text x="240" y="122" font-size="10" text-anchor="middle" fill="#55514b">Kantor Kas Universitas Dharma Andalas</text>
+        <line x1="84" y1="136" x2="396" y2="136" stroke="#55514b" stroke-dasharray="4 3"/>
+        <g ${MONO}>
+          <text x="240" y="160" font-size="15" font-weight="700" text-anchor="middle">BUKTI SETORAN TUNAI</text>
+          <text x="240" y="177" font-size="10.5" text-anchor="middle">Pembayaran Layanan UPT Bahasa</text>
+        </g>
+        <line x1="84" y1="190" x2="396" y2="190" stroke="#55514b" stroke-dasharray="4 3"/>
+        <g ${MONO} font-size="12">${baris}</g>
+        <line x1="84" y1="372" x2="396" y2="372" stroke="#55514b" stroke-dasharray="4 3"/>
+        <g ${MONO}>
+          <text x="86" y="398" font-size="12">JUMLAH</text>
+          <text x="396" y="400" font-size="19" font-weight="700" text-anchor="end">${escXml(jumlah)}</text>
+          ${ejaan.map((t, i) => `<text x="86" y="${422 + i * 15}" font-size="10.5" font-style="italic">${escXml(t)}</text>`).join('')}
+        </g>
+        <line x1="84" y1="${434 + ejaan.length * 15}" x2="396" y2="${434 + ejaan.length * 15}" stroke="#55514b" stroke-dasharray="4 3"/>
+        <g font-size="10" fill="#55514b" text-anchor="middle">
+          <text x="140" y="500">Penyetor</text><text x="330" y="500">Teller</text>
+          <line x1="96" y1="552" x2="184" y2="552" stroke="#8a857c"/><line x1="286" y1="552" x2="374" y2="552" stroke="#8a857c"/>
+        </g>
+        <path d="M104 540 c10 -22 18 -24 20 -6 c2 14 10 -18 22 -10 c8 6 4 12 14 4 c6 -4 10 -2 16 2" fill="none" stroke="#1d2a6b" stroke-width="1.6"/>
+        <path d="M298 542 c6 -16 14 -20 18 -8 c4 10 8 -12 18 -6 c10 6 14 -4 30 -2" fill="none" stroke="#1d2a6b" stroke-width="1.6"/>
+        <g transform="translate(326 536) rotate(-11)" opacity="0.72" filter="url(#tinta)" fill="#27449c" stroke="#27449c" text-anchor="middle">
+          <rect x="-72" y="-31" width="144" height="62" rx="7" fill="none" stroke-width="2.6"/>
+          <rect x="-66" y="-25" width="132" height="50" rx="5" fill="none" stroke-width="1"/>
+          <text y="-10" font-size="8.5" font-weight="700" stroke="none">BANK NAGARI SYARIAH</text>
+          <text y="10" font-size="18" font-weight="700" stroke="none" letter-spacing="3">LUNAS</text>
+          <text y="21" font-size="8" stroke="none">${tgl}</text>
+        </g>
+        <text x="240" y="584" ${MONO} font-size="9" text-anchor="middle" fill="#8a857c">*** DATA DEMO - BUKAN BUKTI ASLI ***</text>
+      </g>
+    </g>
+    <rect width="480" height="640" fill="url(#vignet)"/>
   </g>
 </svg>`;
 }
@@ -180,8 +274,8 @@ async function buatDataDemo() {
       });
 
       let idCicilan = null;
-      let nominalDibayar = s.bayar ?? total;
-      let keterangan = `Pelatihan ${kode}`;
+      let nominalDibayar = total;
+      let keterangan = kode;
 
       if (s.cicilan) {
         const skema = await tx.skema_angsuran.create({
@@ -212,7 +306,7 @@ async function buatDataDemo() {
           }
           if (i === s.termin) {
             idCicilan = c.id_cicilan;
-            nominalDibayar = s.bayar ?? nominal;
+            nominalDibayar = nominal;
             keterangan = `${kode}-T${i}`;
           }
         }

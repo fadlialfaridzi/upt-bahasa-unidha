@@ -67,14 +67,18 @@ function DashboardLayout() {
     const isAdmin = user?.role === 'staf_upt';
     const isTranslationNotification = item.jenis?.startsWith('terjemahan_');
     let target = '/dashboard/mahasiswa';
-    if (isTranslationNotification) {
+    // Notifikasi ruang kelas: jenis 'kelas:<id_kelas>:<pengumuman|materi>'
+    const kelasNotif = /^kelas:(\d+):/.exec(item.jenis || '');
+    if (kelasNotif) {
+      target = `/dashboard/mahasiswa/kelas/${kelasNotif[1]}`;
+    } else if (isTranslationNotification) {
       target = user?.role === 'penerjemah'
         ? '/dashboard/penerjemah'
         : '/dashboard/mahasiswa/terjemahan';
     } else if (item.jenis === 'pembayaran_toefl') {
       target = isAdmin ? '/dashboard/admin/toefl/pembayaran' : '/dashboard/mahasiswa/toefl?mode=lanjut';
-    } else if (isPaymentNotification && isAdmin) {
-      target = '/dashboard/admin/pembayaran';
+    } else if (isPaymentNotification) {
+      target = isAdmin ? '/dashboard/admin/pembayaran' : '/dashboard/mahasiswa/tagihan';
     }
     navigate(target);
   };
@@ -240,7 +244,7 @@ function DashboardLayout() {
                       <p>Belum ada notifikasi.</p>
                     ) : notifications.slice(0, 8).map((item) => (
                       <button type="button" key={item.id_notifikasi} className={!item.sudah_dibaca ? 'unread' : ''} onClick={() => openNotification(item)}>
-                        <span className="notification-icon"><Icon name={item.jenis?.startsWith('terjemahan_') ? 'languages' : 'wallet'} size={16} /></span>
+                        <span className="notification-icon"><Icon name={item.jenis?.startsWith('terjemahan_') ? 'languages' : item.jenis?.startsWith('kelas:') ? (item.jenis.endsWith(':materi') ? 'book' : 'megaphone') : 'wallet'} size={16} /></span>
                         <span><strong>{item.judul}</strong><small>{item.pesan}</small></span>
                       </button>
                     ))}
