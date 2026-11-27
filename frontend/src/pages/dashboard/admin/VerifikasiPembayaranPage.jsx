@@ -119,7 +119,7 @@ function VerifikasiPembayaranPage({ jenisLayanan = null }) {
                   <th>Peserta</th>
                   <th>Layanan</th>
                   <th>Pembayaran</th>
-                  <th className="num">Nominal</th>
+                  <th className="num">Harus dibayar</th>
                   <th>{status === 'menunggu' ? 'Diunggah' : 'Diproses'}</th>
                   <th className="actions"><span className="sr-only">Aksi</span></th>
                 </tr>
@@ -139,7 +139,7 @@ function VerifikasiPembayaranPage({ jenisLayanan = null }) {
                       {p.cicilan ? `Cicilan ${p.cicilan.cicilan_ke}/${p.cicilan.jumlah_cicilan ?? '?'}` : 'Lunas'}
                       <p className="cell-sub">{p.jenis_bukti === 'pdf' ? 'PDF' : 'Gambar'}</p>
                     </td>
-                    <td className="num nowrap">{formatRupiah(p.nominal)}</td>
+                    <td className="num nowrap">{formatRupiah(p.cicilan ? p.cicilan.nominal : p.tagihan.total_tagihan)}</td>
                     <td className="nowrap">
                       {waktu(status === 'menunggu' ? p.tanggal_unggah : p.tanggal_verifikasi)}
                       {p.catatan && <p className="cell-sub" title={p.catatan}>{p.catatan.length > 40 ? `${p.catatan.slice(0, 40)}…` : p.catatan}</p>}

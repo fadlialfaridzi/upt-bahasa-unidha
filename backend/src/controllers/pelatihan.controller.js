@@ -611,7 +611,7 @@ export const getMyKelasMateri = async (req, res) => {
 export const scanPresensiMahasiswa = async (req, res) => {
   try {
     const idPengguna = req.user.id;
-    const token = String(req.body.token_qr ?? '').trim();
+    const token = String(req.body.token_qr ?? '').trim().toUpperCase();
 
     if (!token) {
       return res.status(400).json({ message: 'Kode QR / token presensi wajib diisi' });
@@ -622,6 +622,7 @@ export const scanPresensiMahasiswa = async (req, res) => {
       where: {
         token_qr: token,
         status_presensi: 'dibuka',
+        OR: [{ waktu_tutup_presensi: null }, { waktu_tutup_presensi: { gt: new Date() } }],
       },
       include: {
         kelas_pelatihan: { select: { id_kelas: true, nama_kelas: true } },

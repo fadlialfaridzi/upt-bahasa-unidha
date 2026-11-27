@@ -22,7 +22,8 @@ import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
 import MahasiswaPelatihanPage from './pages/dashboard/mahasiswa/MahasiswaPelatihanPage.jsx';
 import MahasiswaPresensiEwsPage from './pages/dashboard/mahasiswa/MahasiswaPresensiEwsPage.jsx';
 import MahasiswaTerjemahanPage from './pages/dashboard/mahasiswa/MahasiswaTerjemahanPage.jsx';
-import TagihanToeflPage from './pages/dashboard/mahasiswa/TagihanToeflPage.jsx';
+import TagihanSayaPage from './pages/dashboard/mahasiswa/TagihanSayaPage.jsx';
+import MahasiswaKelasSayaPage from './pages/dashboard/mahasiswa/MahasiswaKelasSayaPage.jsx';
 import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
 import KelasAdminPage from './pages/dashboard/admin/KelasAdminPage.jsx';
 import JadwalKelasPage from './pages/dashboard/admin/JadwalKelasPage.jsx';
@@ -34,6 +35,8 @@ import ToeflKuotaPage from './pages/dashboard/admin/ToeflKuotaPage.jsx';
 import KegiatanDosenPage from './pages/dashboard/dosen/KegiatanDosenPage.jsx';
 import KelasSayaPage from './pages/dashboard/dosen/KelasSayaPage.jsx';
 import JobOrderTerjemahanPage from './pages/dashboard/penerjemah/JobOrderTerjemahanPage.jsx';
+import PresensiPertemuanPage from './pages/dashboard/dosen/PresensiPertemuanPage.jsx';
+import RuangKelasPage from './pages/dashboard/kelas/RuangKelasPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 function App() {
@@ -67,11 +70,17 @@ function App() {
             <Route path="dosen/kelas" element={<RoleRoute dashboard="dosen"><KelasSayaPage /></RoleRoute>} />
             <Route path="penerjemah" element={<RoleRoute dashboard="penerjemah"><JobOrderTerjemahanPage /></RoleRoute>} />
             <Route path="dosen/penerjemahan" element={<Navigate to="/dashboard/penerjemah" replace />} />
+            <Route path="dosen/kelas/:idKelas/presensi/:idPertemuan" element={<RoleRoute dashboard="dosen"><PresensiPertemuanPage /></RoleRoute>} />
+            <Route path="dosen/kelas/:idKelas" element={<RoleRoute dashboard="dosen"><RuangKelasPage /></RoleRoute>} />
+            <Route path="dosen/kelas/:idKelas/materi" element={<RoleRoute dashboard="dosen"><RuangKelasPage tabAwal="materi" /></RoleRoute>} />
             <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
             <Route path="mahasiswa/pelatihan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPelatihanPage /></RoleRoute>} />
+            <Route path="mahasiswa/kelas" element={<RoleRoute dashboard="mahasiswa"><MahasiswaKelasSayaPage /></RoleRoute>} />
+            <Route path="mahasiswa/kelas/:idKelas" element={<RoleRoute dashboard="mahasiswa"><RuangKelasPage /></RoleRoute>} />
+            <Route path="mahasiswa/tagihan" element={<RoleRoute dashboard="mahasiswa"><TagihanSayaPage /></RoleRoute>} />
             <Route path="mahasiswa/presensi-ews" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPresensiEwsPage /></RoleRoute>} />
             <Route path="mahasiswa/terjemahan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaTerjemahanPage /></RoleRoute>} />
-            <Route path="mahasiswa/toefl/tagihan" element={<RoleRoute dashboard="mahasiswa"><TagihanToeflPage /></RoleRoute>} />
+            <Route path="mahasiswa/toefl/tagihan" element={<Navigate to="/dashboard/mahasiswa/tagihan?layanan=toefl" replace />} />
             <Route path="mahasiswa/toefl" element={<RoleRoute dashboard="mahasiswa"><ToeflDaftarPage /></RoleRoute>} />
           </Route>
         </Route>

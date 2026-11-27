@@ -261,7 +261,7 @@ function DosenDashboard() {
                 <li key={`p${p.id_pertemuan}`}>
                   <span className="todo-icon"><Icon name="qr" size={15} /></span>
                   <div>
-                    <strong>Presensi belum dicatat</strong>
+                    <strong><Link to={`/dashboard/dosen/kelas/${p.id_kelas}/presensi/${p.id_pertemuan}`}>Presensi belum dicatat</Link></strong>
                     <span>{p.nama_kelas} · P{p.pertemuan_ke} · {formatTanggal(p.tanggal, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                   </div>
                 </li>

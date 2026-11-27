@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../../services/api.js';
 import Icon from '../../../components/ui/Icon.jsx';
 import { EmptyState, PageHeader } from '../../../components/dashboard/Widgets.jsx';
 import { JENIS_PELATIHAN, TIPE_KELAS, formatRupiah, formatTanggal } from '../../../config/pelatihan.js';
 import DaftarPelatihanModal from './DaftarPelatihanModal.jsx';
-import UploadBuktiModal from './UploadBuktiModal.jsx';
-import MateriMahasiswaModal from './MateriMahasiswaModal.jsx';
 
 const STATUS_PENDAFTARAN_BADGE = {
   menunggu_pembayaran: { label: 'Menunggu Pembayaran', badge: 'badge-warning' },
@@ -15,40 +13,40 @@ const STATUS_PENDAFTARAN_BADGE = {
   dibatalkan: { label: 'Dibatalkan', badge: 'badge-danger' },
 };
 
-const STATUS_CICILAN_BADGE = {
-  belum_terbit: { label: 'Belum Terbit', badge: 'badge-muted' },
-  menunggu_pembayaran: { label: 'Menunggu Pembayaran', badge: 'badge-warning' },
-  menunggu_verifikasi: { label: 'Menunggu Validasi Admin', badge: 'badge-accent' },
+const STATUS_TAGIHAN_BADGE = {
+  menunggu_pembayaran: { label: 'Belum dibayar', badge: 'badge-warning' },
+  menunggu_verifikasi: { label: 'Menunggu verifikasi', badge: 'badge-accent' },
+  sebagian: { label: 'Cicilan berjalan', badge: 'badge-accent' },
   lunas: { label: 'Lunas', badge: 'badge-success' },
+  kedaluwarsa: { label: 'Kedaluwarsa', badge: 'badge-danger' },
+  dibatalkan: { label: 'Dibatalkan', badge: 'badge-danger' },
 };
 
 function MahasiswaPelatihanPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const paramTab = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(
-    paramTab === 'tagihan' || paramTab === 'saya' ? 'saya' : paramTab === 'materi' ? 'materi' : 'katalog'
+    paramTab === 'tagihan' || paramTab === 'saya' ? 'saya' : 'katalog'
   );
 
   useEffect(() => {
     const t = searchParams.get('tab');
     if (t === 'tagihan' || t === 'saya') setActiveTab('saya');
-    else if (t === 'materi') setActiveTab('materi');
+    else if (t === 'materi') navigate('/dashboard/mahasiswa/kelas', { replace: true }); // tautan lama
     else if (t === 'katalog') setActiveTab('katalog');
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   const switchTab = (tabName) => {
     setActiveTab(tabName);
-    setSearchParams(tabName === 'saya' ? { tab: 'tagihan' } : tabName === 'materi' ? { tab: 'materi' } : {});
+    setSearchParams(tabName === 'saya' ? { tab: 'saya' } : {});
   };
   const [kelasTersedia, setKelasTersedia] = useState([]);
   const [pendaftaranSaya, setPendaftaranSaya] = useState([]);
-  const [kelasMateriSaya, setKelasMateriSaya] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Modals
   const [modalDaftar, setModalDaftar] = useState(null); // kelas object
-  const [modalUpload, setModalUpload] = useState(null); // { tagihan, cicilan? }
-  const [modalMateri, setModalMateri] = useState(null); // { kelas, materi }
 
   // Filter & Search katalog
   const [search, setSearch] = useState('');
@@ -57,14 +55,12 @@ function MahasiswaPelatihanPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [resKatalog, resSaya, resMateri] = await Promise.all([
+      const [resKatalog, resSaya] = await Promise.all([
         api.get('/pelatihan'),
         api.get('/pelatihan/my-pendaftaran'),
-        api.get('/pelatihan/my-kelas-materi'),
       ]);
       setKelasTersedia(resKatalog.data.data || []);
       setPendaftaranSaya(resSaya.data.data || []);
-      setKelasMateriSaya(resMateri.data.data || []);
     } catch {
       toast.error('Gagal memuat data kelas pelatihan');
     } finally {
@@ -83,12 +79,6 @@ function MahasiswaPelatihanPage() {
     setActiveTab('saya');
   };
 
-  // Handler setelah sukses mengunggah bukti pembayaran
-  const handleUploadSuccess = () => {
-    setModalUpload(null);
-    loadData();
-  };
-
   const filteredKatalog = kelasTersedia.filter((k) => {
     const matchSearch =
       !search ||
@@ -101,9 +91,9 @@ function MahasiswaPelatihanPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Portal Peserta / Pelatihan"
-        title="Kelas Pelatihan Bahasa"
-        subtitle="Pilih dan ikuti kelas pelatihan intensif atau kelola pendaftaran & pembayaran Anda."
+        eyebrow="Mahasiswa / Daftar pelatihan"
+        title="Daftar kelas pelatihan"
+        subtitle="Pilih kelas yang tersedia dan pantau status pendaftaran Anda. Pembayaran ada di menu Tagihan, kelas aktif di menu Kelas saya."
       />
 
       {/* Tabs Navigasi */}
@@ -150,7 +140,7 @@ function MahasiswaPelatihanPage() {
           }}
         >
           <Icon name="wallet" size={18} />
-          <span>Pendaftaran & Pembayaran Saya</span>
+          <span>Pendaftaran saya</span>
           {pendaftaranSaya.length > 0 && (
             <span className="badge badge-success" style={{ fontSize: '0.72rem', padding: '2px 7px' }}>
               {pendaftaranSaya.length}
@@ -158,31 +148,6 @@ function MahasiswaPelatihanPage() {
           )}
         </button>
 
-        <button
-          type="button"
-          onClick={() => switchTab('materi')}
-          style={{
-            padding: '10px 18px',
-            border: 'none',
-            borderBottom: activeTab === 'materi' ? '3px solid var(--brand-700)' : '3px solid transparent',
-            background: 'none',
-            color: activeTab === 'materi' ? 'var(--brand-800)' : 'var(--muted)',
-            fontWeight: activeTab === 'materi' ? 700 : 500,
-            fontSize: '0.95rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <Icon name="file" size={18} />
-          <span>Kelas Terdaftar & Materi</span>
-          {kelasMateriSaya.length > 0 && (
-            <span className="badge badge-accent" style={{ fontSize: '0.72rem', padding: '2px 7px' }}>
-              {kelasMateriSaya.length}
-            </span>
-          )}
-        </button>
       </div>
 
       {loading ? (
@@ -302,85 +267,8 @@ function MahasiswaPelatihanPage() {
             </div>
           )}
         </div>
-      ) : activeTab === 'materi' ? (
-        /* ================= TAB 3: KELAS TERDAFTAR & MATERI BELAJAR ================= */
-        <div>
-          {kelasMateriSaya.length === 0 ? (
-            <EmptyState
-              icon="book"
-              title="Belum ada kelas terverifikasi"
-              text="Kelas yang telah divalidasi pembayarannya oleh admin akan muncul di sini. Anda dapat mengakses seluruh materi pembelajaran yang diunggah oleh dosen pengajar."
-            />
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
-              {kelasMateriSaya.map((km) => {
-                const k = km.kelas;
-                const pengajar = k.pengajar_kelas?.map((pk) => pk.pengajar?.user?.nama).filter(Boolean) || [];
-                const materiList = k.materi || [];
-
-                return (
-                  <div
-                    key={km.id_pendaftaran}
-                    style={{
-                      background: '#fff',
-                      borderRadius: '12px',
-                      border: '1px solid var(--line)',
-                      padding: '20px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                        <span className="badge badge-accent" style={{ fontSize: '0.75rem' }}>
-                          {JENIS_PELATIHAN[k.jenis_pelatihan] || k.jenis_pelatihan}
-                        </span>
-                        <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
-                          Terverifikasi / Aktif
-                        </span>
-                      </div>
-
-                      <h3 style={{ fontSize: '1.2rem', color: 'var(--brand-900)', margin: '4px 0 10px', fontWeight: 700 }}>
-                        {k.nama_kelas}
-                      </h3>
-
-                      <div style={{ display: 'grid', gap: '6px', fontSize: '0.84rem', color: 'var(--ink-2)', marginBottom: '16px' }}>
-                        <div>📅 <strong>Total Pertemuan:</strong> {k.jumlah_pertemuan} kali</div>
-                        {pengajar.length > 0 && <div>👨‍🏫 <strong>Dosen Pengajar:</strong> {pengajar.join(', ')}</div>}
-                        <div>
-                          📚 <strong>Materi Pembelajaran:</strong>{' '}
-                          <span style={{ fontWeight: 600, color: materiList.length > 0 ? 'var(--brand-800)' : 'var(--muted)' }}>
-                            {materiList.length} Dokumen Tersedia
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ borderTop: '1px solid var(--line)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                        Status: <strong style={{ color: '#16a34a' }}>Siap Belajar</strong>
-                      </span>
-
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                        onClick={() => setModalMateri({ kelas: k, materi: materiList })}
-                      >
-                        <Icon name="file" size={16} />
-                        <span>Buka Materi ({materiList.length})</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       ) : (
-        /* ================= TAB 2: PENDAFTARAN & TAGIHAN SAYA ================= */
+        /* ================= TAB 2: PENDAFTARAN SAYA ================= */
         <div>
           {pendaftaranSaya.length === 0 ? (
             <EmptyState
@@ -430,15 +318,9 @@ function MahasiswaPelatihanPage() {
                               type="button"
                               className="btn btn-outline btn-sm"
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
-                              onClick={() => {
-                                const km = kelasMateriSaya.find((m) => m.id_pendaftaran === item.id_pendaftaran);
-                                setModalMateri({
-                                  kelas: item.kelas,
-                                  materi: km?.kelas?.materi || [],
-                                });
-                              }}
+                              onClick={() => navigate(`/dashboard/mahasiswa/kelas/${item.kelas.id_kelas}`)}
                             >
-                              <Icon name="file" size={14} /> Buka Materi Kelas
+                              <Icon name="book" size={14} /> Buka ruang kelas
                             </button>
                           </div>
                         )}
@@ -455,155 +337,22 @@ function MahasiswaPelatihanPage() {
                       </div>
                     </div>
 
-                    {/* Informasi Tagihan & Status Pembayaran */}
+                    {/* Pembayaran dikelola di halaman Tagihan */}
                     {tagihan && (
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--brand-900)' }}>
-                            Kode Tagihan: <span style={{ fontFamily: 'monospace', color: 'var(--brand-700)' }}>{tagihan.kode_tagihan}</span>
+                      <div className="daftar-tagihan-ringkas">
+                        <div>
+                          <span className="cell-sub">Tagihan</span>
+                          <strong className="tagihan-kode">{tagihan.kode_tagihan}</strong>
+                          <span className={`badge ${(STATUS_TAGIHAN_BADGE[tagihan.status] || { badge: 'badge-muted' }).badge}`}>
+                            {(STATUS_TAGIHAN_BADGE[tagihan.status] || { label: tagihan.status }).label}
                           </span>
                         </div>
-
-                        {/* Kasus 1: Skema Cicilan */}
-                        {isCicilan && skema?.cicilan ? (
-                          <div style={{ display: 'grid', gap: '10px' }}>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
-                              Jadwal Pembayaran Cicilan (Maksimal 3x selama masa kelas):
-                            </span>
-
-                            {skema.cicilan.map((c) => {
-                              const cicilanBadge = STATUS_CICILAN_BADGE[c.status] || { label: c.status, badge: 'badge-muted' };
-                              const labelTermin =
-                                c.cicilan_ke === 1
-                                  ? 'Termin 1 (Diawal - Pertemuan 1)'
-                                  : c.cicilan_ke === 2 && skema.jumlah_cicilan === 3
-                                  ? 'Termin 2 (Ditengah)'
-                                  : `Termin ${c.cicilan_ke} (Diakhir)`;
-
-                              return (
-                                <div
-                                  key={c.id_cicilan}
-                                  style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    flexWrap: 'wrap',
-                                    gap: '12px',
-                                    padding: '12px 14px',
-                                    borderRadius: '8px',
-                                    border: '1px solid var(--line)',
-                                    background: c.status === 'lunas' ? '#f0fdf4' : c.status === 'menunggu_verifikasi' ? '#eff6ff' : '#f8fafc',
-                                  }}
-                                >
-                                  <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <strong style={{ fontSize: '0.9rem', color: 'var(--brand-900)' }}>{labelTermin}</strong>
-                                      <span className={`badge ${cicilanBadge.badge}`} style={{ fontSize: '0.72rem' }}>
-                                        {cicilanBadge.label}
-                                      </span>
-                                    </div>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '2px' }}>
-                                      Kode: <code style={{ color: 'var(--ink-2)' }}>{c.kode_termin}</code> · Jatuh Tempo: {formatTanggal(c.jatuh_tempo)}
-                                    </div>
-                                  </div>
-
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <strong style={{ fontSize: '1rem', color: 'var(--brand-800)' }}>
-                                      {formatRupiah(c.nominal)}
-                                    </strong>
-
-                                    {c.status === 'lunas' ? (
-                                      <span style={{ color: '#15803d', fontSize: '0.82rem', fontWeight: 600 }}>✓ Lunas</span>
-                                    ) : c.status === 'menunggu_verifikasi' ? (
-                                      <button
-                                        type="button"
-                                        className="btn btn-outline"
-                                        style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                                        onClick={() => setModalUpload({ tagihan, cicilan: c })}
-                                      >
-                                        <Icon name="upload" size={14} /> Ganti Bukti
-                                      </button>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        className="btn btn-primary"
-                                        style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                                        onClick={() => setModalUpload({ tagihan, cicilan: c })}
-                                      >
-                                        <Icon name="upload" size={14} /> Unggah Bukti Bayar
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          /* Kasus 2: Bayar Lunas */
-                          <div
-                            style={{
-                              padding: '14px',
-                              borderRadius: '8px',
-                              border: '1px solid var(--line)',
-                              background: tagihan.status === 'lunas' ? '#f0fdf4' : tagihan.status === 'menunggu_verifikasi' ? '#eff6ff' : '#f8fafc',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              flexWrap: 'wrap',
-                              gap: '12px',
-                            }}
-                          >
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <strong style={{ fontSize: '0.92rem', color: 'var(--brand-900)' }}>Pembayaran Penuh (Lunas 1x)</strong>
-                                <span className={`badge ${tagihan.status === 'lunas' ? 'badge-success' : tagihan.status === 'menunggu_verifikasi' ? 'badge-accent' : 'badge-warning'}`} style={{ fontSize: '0.72rem' }}>
-                                  {tagihan.status === 'lunas' ? 'Lunas' : tagihan.status === 'menunggu_verifikasi' ? 'Menunggu Validasi Admin' : 'Menunggu Pembayaran'}
-                                </span>
-                              </div>
-                              <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                                Setoran tunai / transfer bank sebelum kelas dimulai.
-                              </span>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                              <strong style={{ fontSize: '1.1rem', color: 'var(--brand-800)' }}>
-                                {formatRupiah(tagihan.total_tagihan)}
-                              </strong>
-
-                              {tagihan.status === 'lunas' ? (
-                                <span style={{ color: '#15803d', fontSize: '0.85rem', fontWeight: 600 }}>✓ Lunas</span>
-                              ) : tagihan.status === 'menunggu_verifikasi' ? (
-                                <button
-                                  type="button"
-                                  className="btn btn-outline"
-                                  style={{ fontSize: '0.82rem', padding: '6px 12px' }}
-                                  onClick={() => setModalUpload({ tagihan })}
-                                >
-                                  <Icon name="upload" size={14} /> Ganti Bukti
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="btn btn-primary"
-                                  style={{ fontSize: '0.82rem', padding: '6px 12px' }}
-                                  onClick={() => setModalUpload({ tagihan })}
-                                >
-                                  <Icon name="upload" size={14} /> Unggah Bukti Bayar
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Rekening Bank info */}
-                        <div style={{ marginTop: '14px', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                          <span>
-                            🏦 <strong>Bank Nagari</strong> · No. Rek: <code style={{ color: 'var(--brand-800)', fontWeight: 700 }}>0102.0210.01234-5</code> a.n. <strong>UPT Bahasa UNIDHA</strong>
-                          </span>
-                          <span style={{ color: 'var(--muted)' }}>
-                            *Pembayaran diverifikasi secara manual oleh admin setelah bukti diunggah.
-                          </span>
-                        </div>
+                        <Link
+                          to={`/dashboard/mahasiswa/tagihan?layanan=pelatihan&kode=${tagihan.kode_tagihan}`}
+                          className={`btn btn-sm ${tagihan.status === 'lunas' ? 'btn-outline' : 'btn-primary'}`}
+                        >
+                          <Icon name="wallet" size={14} /> {tagihan.status === 'lunas' ? 'Lihat tagihan' : 'Bayar / lihat tagihan'}
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -623,24 +372,7 @@ function MahasiswaPelatihanPage() {
         />
       )}
 
-      {/* Modal Upload Bukti */}
-      {modalUpload && (
-        <UploadBuktiModal
-          tagihan={modalUpload.tagihan}
-          cicilan={modalUpload.cicilan}
-          onClose={() => setModalUpload(null)}
-          onSuccess={handleUploadSuccess}
-        />
-      )}
 
-      {/* Modal Materi Pembelajaran */}
-      {modalMateri && (
-        <MateriMahasiswaModal
-          kelas={modalMateri.kelas}
-          materi={modalMateri.materi}
-          onClose={() => setModalMateri(null)}
-        />
-      )}
     </>
   );
 }

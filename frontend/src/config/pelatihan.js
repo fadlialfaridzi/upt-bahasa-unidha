@@ -63,7 +63,20 @@ export const STATUS_PRESENSI = {
   ditutup: { label: 'Presensi ditutup', badge: 'badge-muted' },
 };
 
-export const JENIS_BENTROK = { pengajar: 'Pengajar', kegiatan: 'Kegiatan dosen', ruang: 'Ruang', kelas: 'Kelas' };
+export const STATUS_KEHADIRAN = {
+  hadir: { label: 'Hadir', badge: 'badge-success' },
+  izin: { label: 'Izin', badge: 'badge-warning' },
+  alpha: { label: 'Alpha', badge: 'badge-danger' },
+};
+
+/**
+ * Isi QR presensi (1 pertemuan = 1 QR): tautan ke halaman Presensi & EWS mahasiswa.
+ * Pemindai di aplikasi membaca parameter `token`; kamera HP biasa membuka halaman ini lalu presensi
+ * dikirim otomatis ke POST /api/pelatihan/presensi/scan.
+ */
+export const urlPresensiQr = (token) => `${window.location.origin}/dashboard/mahasiswa/presensi-ews?token=${encodeURIComponent(token)}`;
+
+export const JENIS_BENTROK ={ pengajar: 'Pengajar', kegiatan: 'Kegiatan dosen', ruang: 'Ruang', kelas: 'Kelas' };
 
 // Preset jadwal default pelatihan
 export const PRESET_POLA_HARI = [
