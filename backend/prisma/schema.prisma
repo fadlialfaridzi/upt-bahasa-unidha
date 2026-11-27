@@ -203,6 +203,7 @@ model pengguna {
   pertemuan_kelas       pertemuan_kelas[]
   kuesioner_pengajar    kuesioner_pengajar[]
   kegiatan_dosen        kegiatan_dosen[]
+  pengumuman_kelas      pengumuman_kelas[]
   override_diajukan     override_kuota[]        @relation("override_pengaju")
   override_diputuskan   override_kuota[]        @relation("override_penyetuju")
 
@@ -339,6 +340,7 @@ model kelas_pelatihan {
   pendaftaran_pelatihan pendaftaran_pelatihan[]
   pertemuan_kelas       pertemuan_kelas[]
   materi                materi[]
+  pengumuman_kelas      pengumuman_kelas[]
 }
 
 // Satu pendaftaran = satu nilai akhir (nilai_akhir/post-test) dan maksimal satu sertifikat.
@@ -415,6 +417,21 @@ model materi {
   kelas_pelatihan kelas_pelatihan @relation(fields: [id_kelas], references: [id_kelas])
 
   @@index([id_kelas])
+}
+
+// Pengumuman dosen di ruang kelas (forum kelas ala Google Classroom). Peserta hanya membaca.
+model pengumuman_kelas {
+  id_pengumuman   Int      @id @default(autoincrement())
+  id_kelas        Int
+  id_pengajar     Int
+  isi             String
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @default(now()) @updatedAt
+
+  kelas_pelatihan kelas_pelatihan @relation(fields: [id_kelas], references: [id_kelas], onDelete: Cascade)
+  pengajar        pengguna        @relation(fields: [id_pengajar], references: [id_pengguna])
+
+  @@index([id_kelas, dibuat_pada])
 }
 
 // Jadwal kegiatan dosen (#71): waktu dosen TIDAK bisa mengajar di UPT (mengajar S1, rapat, dll).
