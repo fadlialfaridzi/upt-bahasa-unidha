@@ -254,6 +254,16 @@ function ToeflSesiPage() {
                               <Icon name="calendar" size={17} />
                             </button>
                           )}
+                          {item.status !== 'dibatalkan' && (
+                            <Link
+                              to={`/dashboard/admin/toefl/sesi/${item.id_sesi}/absensi`}
+                              className="icon-action"
+                              aria-label={`QR Absensi ${item.nama_sesi}`}
+                              title="Kelola QR Absensi TOEFL"
+                            >
+                              <Icon name="qr" size={17} />
+                            </Link>
+                          )}
                           <Link
                             to={`/dashboard/admin/toefl/sesi/${item.id_sesi}/edit`}
                             className="icon-action"

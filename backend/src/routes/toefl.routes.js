@@ -8,6 +8,10 @@ import {
   getKuotaToefl, updateKuotaSesi, getPendaftarSesi, rilisSesiDariKuota,
   ajukanOverrideToefl, getDaftarOverrideToefl, putusanOverrideToefl,
 } from '../controllers/toefl.controller.js';
+import {
+  getAbsensiSesiToefl, bukaAbsensiToefl, tutupAbsensiToefl,
+  updateKehadiranManualToefl, scanAbsensiToefl,
+} from '../controllers/toefl-absensi.controller.js';
 import { authenticate, authorizeAdmin, authorizeSuperAdmin } from '../middlewares/auth.middleware.js';
 import { authorizeRole } from '../middlewares/role.middleware.js';
 import { uploadBukti } from '../middlewares/upload.middleware.js';
@@ -24,6 +28,7 @@ router.get('/my-pendaftaran', authenticate, getMyPendaftaran);
 router.get('/tagihan', authenticate, getTagihanToeflPeserta);
 router.post('/pembayaran/upload', authenticate, uploadBukti.single('bukti'), uploadBuktiToefl);
 router.get('/pendaftaran/:id/bukti', authenticate, getBuktiToefl);
+router.post('/absensi/scan', authenticate, scanAbsensiToefl);
 
 // Admin only
 router.patch('/pendaftaran/:id/status', authenticate, authorizeAdmin, updateStatusPendaftaran);
@@ -43,6 +48,10 @@ router.get('/sesi/:id', authenticate, authorizeAdmin, getSesiById);
 router.post('/sesi', authenticate, authorizeAdmin, createSesi);
 router.put('/sesi/:id', authenticate, authorizeAdmin, updateSesi);
 router.post('/sesi/:id/rilis', authenticate, authorizeAdmin, rilisSesi);
+router.get('/sesi/:id/absensi', authenticate, authorizeAdmin, getAbsensiSesiToefl);
+router.post('/sesi/:id/absensi/buka', authenticate, authorizeAdmin, bukaAbsensiToefl);
+router.post('/sesi/:id/absensi/tutup', authenticate, authorizeAdmin, tutupAbsensiToefl);
+router.patch('/sesi/:id/absensi/:idPendaftaran', authenticate, authorizeAdmin, updateKehadiranManualToefl);
 router.delete('/sesi/:id', authenticate, authorizeAdmin, deleteSesi);
 
 export default router;
