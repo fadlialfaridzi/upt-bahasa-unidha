@@ -6,8 +6,10 @@ import {
   getBuktiToefl,
   getAllSesi, getSesiById, createSesi, updateSesi, rilisSesi, deleteSesi,
   getKuotaToefl, updateKuotaSesi, getPendaftarSesi, rilisSesiDariKuota,
+  ajukanOverrideToefl, getDaftarOverrideToefl, putusanOverrideToefl,
 } from '../controllers/toefl.controller.js';
-import { authenticate, authorizeAdmin } from '../middlewares/auth.middleware.js';
+import { authenticate, authorizeAdmin, authorizeSuperAdmin } from '../middlewares/auth.middleware.js';
+import { authorizeRole } from '../middlewares/role.middleware.js';
 import { uploadBukti } from '../middlewares/upload.middleware.js';
 
 const router = Router();
@@ -29,6 +31,13 @@ router.get('/kuota', authenticate, authorizeAdmin, getKuotaToefl);
 router.put('/sesi/:id/kuota', authenticate, authorizeAdmin, updateKuotaSesi);
 router.get('/sesi/:id/pendaftar', authenticate, authorizeAdmin, getPendaftarSesi);
 router.post('/sesi/:id/rilis-kuota', authenticate, authorizeAdmin, rilisSesiDariKuota);
+router.post('/override', authenticate, authorizeRole('staf_upt'), ajukanOverrideToefl);
+
+// Super Admin only
+router.get('/override', authenticate, authorizeSuperAdmin, getDaftarOverrideToefl);
+router.patch('/override/:id/putusan', authenticate, authorizeSuperAdmin, putusanOverrideToefl);
+
+// Admin only - kelola sesi
 router.get('/sesi', authenticate, authorizeAdmin, getAllSesi);
 router.get('/sesi/:id', authenticate, authorizeAdmin, getSesiById);
 router.post('/sesi', authenticate, authorizeAdmin, createSesi);
