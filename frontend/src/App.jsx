@@ -16,6 +16,7 @@ import PelatihanPage from './pages/pelatihan/PelatihanPage.jsx';
 import TerjemahanPage from './pages/terjemahan/TerjemahanPage.jsx';
 import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard.jsx';
 import SuperAdminUsersPage from './pages/dashboard/SuperAdminUsersPage.jsx';
+import SuperAdminOverrideToeflPage from './pages/dashboard/SuperAdminOverrideToeflPage.jsx';
 import AdminDashboard from './pages/dashboard/AdminDashboard.jsx';
 import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
@@ -55,6 +56,7 @@ function App() {
             <Route index element={<DashboardRedirect />} />
             <Route path="super-admin" element={<RoleRoute dashboard="superadmin"><SuperAdminDashboard /></RoleRoute>} />
             <Route path="super-admin/users" element={<RoleRoute dashboard="superadmin"><SuperAdminUsersPage /></RoleRoute>} />
+            <Route path="super-admin/override-toefl" element={<RoleRoute dashboard="superadmin"><SuperAdminOverrideToeflPage /></RoleRoute>} />
             <Route path="admin"       element={<RoleRoute dashboard="admin"><AdminDashboard /></RoleRoute>} />
             <Route path="admin/kelas" element={<RoleRoute dashboard="admin"><KelasAdminPage /></RoleRoute>} />
             <Route path="admin/kelas/:id/jadwal" element={<RoleRoute dashboard="admin"><JadwalKelasPage /></RoleRoute>} />

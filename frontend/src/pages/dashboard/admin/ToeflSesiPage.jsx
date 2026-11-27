@@ -5,6 +5,7 @@ import api from '../../../services/api.js';
 import Icon from '../../../components/ui/Icon.jsx';
 import Modal from '../../../components/ui/Modal.jsx';
 import { EmptyState, PageHeader } from '../../../components/dashboard/Widgets.jsx';
+import { OVERRIDE_STATUS_META, evaluasiRilisSesi, getOverrideSesi } from '../../../utils/toeflOverride.js';
 
 const STATUS = {
   terbuka: { label: 'Pendaftaran dibuka', badge: 'badge-success' },
@@ -93,6 +94,12 @@ function ToeflSesiPage() {
   };
 
   const handleRilis = async (item) => {
+    if (releasing !== null) return;
+    const evalRilis = evaluasiRilisSesi(item, item.jumlah_lunas || 0);
+    if (!evalRilis.canRelease) {
+      toast.error(evalRilis.reason || 'Sesi belum memenuhi syarat untuk dirilis');
+      return;
+    }
     setReleasing(item.id_sesi);
     try {
       const res = await api.post(`/toefl/sesi/${item.id_sesi}/rilis`);
@@ -161,6 +168,10 @@ function ToeflSesiPage() {
                 <option key={value} value={value}>{status.label}</option>
               ))}
             </select>
+            <button type="button" className="btn btn-soft btn-sm" onClick={load} disabled={loading || releasing !== null}>
+              <Icon name="refresh" size={15} />
+              Muat ulang
+            </button>
           </div>
 
           {loading ? (
@@ -194,6 +205,11 @@ function ToeflSesiPage() {
                     const status = STATUS[item.status] || STATUS.terbuka;
                     const terverifikasi = item.jumlah_lunas || 0;
                     const persen = Math.min(100, Math.round((terverifikasi / item.kuota_maks) * 100));
+                    const itemOverride = getOverrideSesi(item);
+                    const overrideMeta = itemOverride ? OVERRIDE_STATUS_META[itemOverride.status] : null;
+                    const showOverrideBadge = Boolean(overrideMeta) && item.status !== 'selesai' && item.status !== 'dibatalkan';
+                    const replacePrimaryWithOverride = item.status === 'menunggu_override' && showOverrideBadge;
+                    const rilisEval = evaluasiRilisSesi(item, terverifikasi);
                     return (
                       <tr key={item.id_sesi}>
                         <td>
@@ -210,16 +226,30 @@ function ToeflSesiPage() {
                           <p className="cell-sub">Min. {item.kuota_min} untuk rilis</p>
                         </td>
                         <td className="nowrap"><strong>{rupiah(item.tarif)}</strong></td>
-                        <td><span className={`badge ${status.badge}`}>{status.label}</span></td>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                            {!replacePrimaryWithOverride && (
+                              <span className={`badge ${status.badge}`}>{status.label}</span>
+                            )}
+                            {showOverrideBadge && (
+                              <span className={`badge ${overrideMeta.badge}`}>{overrideMeta.label}</span>
+                            )}
+                            {itemOverride?.status === 'ditolak' && itemOverride.catatan_putusan && item.status !== 'dijadwalkan' && (
+                              <p className="cell-sub" style={{ color: 'var(--danger)' }} title={itemOverride.catatan_putusan}>
+                                Alasan tolak: {itemOverride.catatan_putusan}
+                              </p>
+                            )}
+                          </div>
+                        </td>
                         <td className="actions">
-                          {item.status !== 'dijadwalkan' && item.status !== 'selesai' && item.status !== 'dibatalkan' && (
+                          {rilisEval.showReleaseButton && (
                             <button
                               type="button"
                               className="icon-action"
                               onClick={() => handleRilis(item)}
-                              disabled={releasing === item.id_sesi}
+                              disabled={releasing !== null || !rilisEval.canRelease}
                               aria-label={`Rilis jadwal ${item.nama_sesi}`}
-                              title="Rilis jadwal"
+                              title={rilisEval.reason || (rilisEval.viaOverride ? 'Rilis jadwal (Override disetujui)' : 'Rilis jadwal')}
                             >
                               <Icon name="calendar" size={17} />
                             </button>

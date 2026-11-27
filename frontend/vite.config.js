@@ -5,6 +5,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // Aktifkan polling agar perubahan file pada bind-mount Docker (Windows -> Linux container) selalu terdeteksi Vite
+    watch: {
+      usePolling: true,
+    },
     // Izinkan akses lewat port-forward/tunnel (khusus server dev), mis. VS Code Dev Tunnels, ngrok, Cloudflare
     allowedHosts: ['.devtunnels.ms', '.ngrok-free.app', '.ngrok.app', '.trycloudflare.com', '.loca.lt'],
     proxy: {

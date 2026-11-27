@@ -16,6 +16,7 @@ export const DASHBOARDS = {
     menu: [
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/super-admin' },
       { label: 'Akun & role', icon: 'users', path: '/dashboard/super-admin/users' },
+      { label: 'Override TOEFL', icon: 'shield', path: '/dashboard/super-admin/override-toefl' },
       { label: 'Parameter sistem', icon: 'sliders' },
       { label: 'Audit log', icon: 'history' },
       { label: 'Dokumen SOP', icon: 'file' },
