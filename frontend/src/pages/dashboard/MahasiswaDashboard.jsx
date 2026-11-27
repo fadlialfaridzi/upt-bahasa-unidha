@@ -147,7 +147,7 @@ function MahasiswaDashboard() {
           icon="wallet"
           footer={
             <Link
-              to="/dashboard/mahasiswa/pelatihan?tab=tagihan"
+              to="/dashboard/mahasiswa/tagihan"
               className="btn btn-outline"
               style={{ fontSize: '0.82rem', textDecoration: 'none', width: '100%', justifyContent: 'center' }}
             >
@@ -355,7 +355,7 @@ function MahasiswaDashboard() {
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         <Link
-                          to="/dashboard/mahasiswa/pelatihan?tab=tagihan"
+                          to="/dashboard/mahasiswa/tagihan"
                           className="btn btn-outline"
                           style={{ fontSize: '0.78rem', padding: '4px 10px', textDecoration: 'none' }}
                         >
