@@ -70,6 +70,22 @@ export const STATUS_KEHADIRAN = {
 };
 
 /**
+ * Status pencatatan nilai evaluasi pelatihan (tanpa indikator Lulus / Tidak lulus,
+ * karena pelatihan bersifat persiapan/bimbel opsional).
+ */
+export function statusEvaluasi(nilaiPretest, nilaiAkhir) {
+  const adaAkhir = nilaiAkhir !== null && nilaiAkhir !== undefined && nilaiAkhir !== '';
+  const adaPre = nilaiPretest !== null && nilaiPretest !== undefined && nilaiPretest !== '';
+  if (adaAkhir) {
+    return { key: 'sudah_dinilai', label: 'Sudah dinilai', badge: 'badge-success' };
+  }
+  if (adaPre) {
+    return { key: 'pretest', label: 'Pre-test tercatat', badge: 'badge-accent' };
+  }
+  return { key: 'belum_dinilai', label: 'Belum dinilai', badge: 'badge-muted' };
+}
+
+/**
  * Isi QR presensi (1 pertemuan = 1 QR): tautan ke halaman Presensi & EWS mahasiswa.
  * Pemindai di aplikasi membaca parameter `token`; kamera HP biasa membuka halaman ini lalu presensi
  * dikirim otomatis ke POST /api/pelatihan/presensi/scan.

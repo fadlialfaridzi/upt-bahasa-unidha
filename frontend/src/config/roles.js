@@ -31,6 +31,7 @@ export const DASHBOARDS = {
       { label: 'Kuota TOEFL', icon: 'users', path: '/dashboard/admin/toefl/kuota' },
       { label: 'Validasi TOEFL', icon: 'checkCircle', path: '/dashboard/admin/toefl/pembayaran' },
       { label: 'Kelas pelatihan', icon: 'book', path: '/dashboard/admin/kelas' },
+      { label: 'Kuesioner pelatihan', icon: 'clipboard', path: '/dashboard/admin/kuesioner' },
       { label: 'Hasil terjemahan', icon: 'languages', path: '/dashboard/admin/terjemahan/hasil' },
       { label: 'Tagihan & pembayaran', icon: 'wallet', path: '/dashboard/admin/pembayaran' },
       { label: 'Sertifikat', icon: 'award' },
@@ -44,7 +45,7 @@ export const DASHBOARDS = {
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/dosen' },
       { label: 'Kelas saya', icon: 'graduation', path: '/dashboard/dosen/kelas' },
       { label: 'Jadwal kegiatan', icon: 'calendar', path: '/dashboard/dosen/jadwal' },
-      { label: 'Input nilai', icon: 'clipboard' },
+      { label: 'Kuesioner evaluasi', icon: 'award', path: '/dashboard/dosen/kuesioner' },
     ],
   },
   penerjemah: {

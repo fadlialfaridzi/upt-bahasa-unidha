@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import api from '../../../services/api.js';
 import Icon from '../../../components/ui/Icon.jsx';
 import { EmptyState, PageHeader } from '../../../components/dashboard/Widgets.jsx';
-import { JENIS_PELATIHAN, TIPE_KELAS, formatTanggal, todayInput } from '../../../config/pelatihan.js';
+import { JENIS_PELATIHAN, TIPE_KELAS, formatTanggal, statusEvaluasi, todayInput } from '../../../config/pelatihan.js';
 
 const jam = (iso) => (iso ? String(iso).slice(11, 16) : '');
 
@@ -57,12 +57,16 @@ function MahasiswaKelasSayaPage() {
         </section>
       ) : (
         <div className="kelas-tile-grid">
-          {kelas.map(({ id_pendaftaran: id, kelas: k }) => {
+          {kelas.map(({ id_pendaftaran: id, nilai_pretest, nilai_akhir, kelas: k }) => {
             const b = pertemuanBerikutnya(k.pertemuan);
+            const evaluasi = statusEvaluasi(nilai_pretest, nilai_akhir);
             return (
               <Link key={id} to={`/dashboard/mahasiswa/kelas/${k.id_kelas}`} className="panel kelas-tile">
                 <div className={`kelas-tile-band jenis-${k.jenis_pelatihan}`}>
-                  <p>{JENIS_PELATIHAN[k.jenis_pelatihan]} · {TIPE_KELAS[k.tipe_kelas]}</p>
+                  <div className="kelas-tile-band-atas">
+                    <p>{JENIS_PELATIHAN[k.jenis_pelatihan]} · {TIPE_KELAS[k.tipe_kelas]}</p>
+                    <span className={`badge ${evaluasi.badge}`}>{evaluasi.label}</span>
+                  </div>
                   <h2>{k.nama_kelas}</h2>
                   <span>{k.pengajar?.length ? k.pengajar.join(', ') : 'Pengajar belum dijadwalkan'}</span>
                 </div>
@@ -72,6 +76,12 @@ function MahasiswaKelasSayaPage() {
                     {b ? `Berikutnya: ${formatTanggal(b.tanggal, { weekday: 'short', day: 'numeric', month: 'short' })}, ${jam(b.jam_mulai)}${b.ruang ? ` · ${b.ruang}` : ''}` : 'Tidak ada pertemuan mendatang'}
                   </p>
                   <p><Icon name="book" size={15} /> {k.total_materi} materi</p>
+                  <p>
+                    <Icon name="clipboard" size={15} />
+                    {nilai_akhir !== null && nilai_akhir !== undefined
+                      ? `Nilai akhir: ${String(nilai_akhir).replace('.', ',')}${nilai_pretest !== null && nilai_pretest !== undefined ? ` (Pre-test: ${String(nilai_pretest).replace('.', ',')})` : ''}`
+                      : 'Nilai evaluasi belum diinput'}
+                  </p>
                 </div>
                 <span className="kelas-tile-buka">Buka kelas <Icon name="arrowRight" size={15} /></span>
               </Link>

@@ -52,7 +52,10 @@ export const getRuangKelas = async (req, res, next) => {
     if (!akses) return res.status(403).json({ message: 'Anda tidak terdaftar di kelas ini' });
 
     const pesertaSaya = req.user.role === 'peserta'
-      ? await prisma.pendaftaran_pelatihan.findFirst({ where: { id_kelas: idKelas, id_pengguna: req.user.id, status: 'terverifikasi' }, select: { id_pendaftaran: true } })
+      ? await prisma.pendaftaran_pelatihan.findFirst({
+          where: { id_kelas: idKelas, id_pengguna: req.user.id, status: 'terverifikasi' },
+          select: { id_pendaftaran: true, nilai_pretest: true, nilai_akhir: true },
+        })
       : null;
 
     const [pengumuman, materi, pertemuan, peserta] = await Promise.all([
@@ -73,7 +76,12 @@ export const getRuangKelas = async (req, res, next) => {
       }),
       prisma.pendaftaran_pelatihan.findMany({
         where: { id_kelas: idKelas, status: 'terverifikasi' },
-        select: { id_pendaftaran: true, pengguna: { select: { nama_lengkap: true, nim: true } } },
+        select: {
+          id_pendaftaran: true,
+          nilai_pretest: true,
+          nilai_akhir: true,
+          pengguna: { select: { nama_lengkap: true, nim: true, program_studi: true } },
+        },
         orderBy: { pengguna: { nama_lengkap: 'asc' } },
       }),
     ]);
@@ -116,9 +124,24 @@ export const getRuangKelas = async (req, res, next) => {
           pertemuan_selesai: daftarPertemuan.filter((p) => p.status === 'selesai').length,
         },
         kehadiran_saya: kehadiranSaya,
+        nilai_saya: pesertaSaya
+          ? {
+              nilai_pretest: pesertaSaya.nilai_pretest !== null ? Number(pesertaSaya.nilai_pretest) : null,
+              nilai_akhir: pesertaSaya.nilai_akhir !== null ? Number(pesertaSaya.nilai_akhir) : null,
+            }
+          : null,
         batas_materi: { maks_mb: MAKS_MB, ekstensi: EKSTENSI_MATERI },
         // Daftar peserta hanya untuk dosen pengampu & admin
-        peserta: req.user.role === 'peserta' ? null : peserta.map((d) => ({ id_pendaftaran: d.id_pendaftaran, nama_lengkap: d.pengguna.nama_lengkap, nim: d.pengguna.nim })),
+        peserta: req.user.role === 'peserta'
+          ? null
+          : peserta.map((d) => ({
+              id_pendaftaran: d.id_pendaftaran,
+              nama_lengkap: d.pengguna.nama_lengkap,
+              nim: d.pengguna.nim,
+              program_studi: d.pengguna.program_studi,
+              nilai_pretest: d.nilai_pretest !== null ? Number(d.nilai_pretest) : null,
+              nilai_akhir: d.nilai_akhir !== null ? Number(d.nilai_akhir) : null,
+            })),
       },
     });
   } catch (err) {

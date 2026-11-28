@@ -90,9 +90,14 @@ function KelasAdminPage() {
         title="Kelas pelatihan"
         subtitle="Buat dan kelola kelas, kuota, tarif, serta periode kuesioner."
         action={
-          <button type="button" className="btn btn-primary" onClick={() => setFormTarget('new')}>
-            <Icon name="plus" size={18} /> Buat kelas
-          </button>
+          <div className="action-group">
+            <Link to="/dashboard/admin/kuesioner" className="btn btn-outline">
+              <Icon name="clipboard" size={17} /> Instrumen kuesioner
+            </Link>
+            <button type="button" className="btn btn-primary" onClick={() => setFormTarget('new')}>
+              <Icon name="plus" size={18} /> Buat kelas
+            </button>
+          </div>
         }
       />
 
