@@ -90,6 +90,7 @@ enum status_presensi_pertemuan {
 enum status_kehadiran {
   hadir
   izin
+  sakit
   alpha
 }
 
@@ -203,6 +204,7 @@ model pengguna {
   pertemuan_kelas       pertemuan_kelas[]
   kuesioner_pengajar    kuesioner_pengajar[]
   kegiatan_dosen        kegiatan_dosen[]
+  pengumuman_kelas      pengumuman_kelas[]
   override_diajukan     override_kuota[]        @relation("override_pengaju")
   override_diputuskan   override_kuota[]        @relation("override_penyetuju")
 
@@ -261,18 +263,22 @@ model dokumen_sop {
 // ============================================================================
 
 model sesi_toefl {
-  id_sesi           Int               @id @default(autoincrement())
-  nama_sesi         String            @db.VarChar(100)
-  batas_pendaftaran DateTime?
-  tanggal           DateTime?         @db.Date
-  jam_mulai         DateTime?         @db.Time(0)
-  jam_selesai       DateTime?         @db.Time(0)
-  ruang             String?           @db.VarChar(50)
-  kuota_min         Int               @default(8) @db.SmallInt
-  kuota_maks        Int               @default(10) @db.SmallInt
-  tarif             Decimal           @db.Decimal(12, 2)
-  status            status_sesi_toefl @default(terbuka)
-  tanggal_rilis     DateTime?
+  id_sesi              Int                        @id @default(autoincrement())
+  nama_sesi            String                     @db.VarChar(100)
+  batas_pendaftaran    DateTime?
+  tanggal              DateTime?                  @db.Date
+  jam_mulai            DateTime?                  @db.Time(0)
+  jam_selesai          DateTime?                  @db.Time(0)
+  ruang                String?                    @db.VarChar(50)
+  kuota_min            Int                        @default(8) @db.SmallInt
+  kuota_maks           Int                        @default(10) @db.SmallInt
+  tarif                Decimal                    @db.Decimal(12, 2)
+  status               status_sesi_toefl          @default(terbuka)
+  tanggal_rilis        DateTime?
+  token_qr             String?                    @unique @db.VarChar(64)
+  status_presensi      status_presensi_pertemuan?
+  waktu_buka_presensi  DateTime?
+  waktu_tutup_presensi DateTime?
 
   pendaftaran_toefl pendaftaran_toefl[]
   override_kuota    override_kuota[]
@@ -290,6 +296,8 @@ model pendaftaran_toefl {
   status           status_pendaftaran @default(menunggu_pembayaran)
   skor_toefl       Decimal?           @db.Decimal(6, 2)
   status_kelulusan status_kelulusan   @default(belum_dinilai)
+  status_kehadiran status_kehadiran?
+  waktu_presensi   DateTime?
 
   pengguna   pengguna    @relation(fields: [id_pengguna], references: [id_pengguna])
   sesi_toefl sesi_toefl  @relation(fields: [id_sesi], references: [id_sesi])
@@ -339,6 +347,7 @@ model kelas_pelatihan {
   pendaftaran_pelatihan pendaftaran_pelatihan[]
   pertemuan_kelas       pertemuan_kelas[]
   materi                materi[]
+  pengumuman_kelas      pengumuman_kelas[]
 }
 
 // Satu pendaftaran = satu nilai akhir (nilai_akhir/post-test) dan maksimal satu sertifikat.
@@ -415,6 +424,21 @@ model materi {
   kelas_pelatihan kelas_pelatihan @relation(fields: [id_kelas], references: [id_kelas])
 
   @@index([id_kelas])
+}
+
+// Pengumuman dosen di ruang kelas (forum kelas ala Google Classroom). Peserta hanya membaca.
+model pengumuman_kelas {
+  id_pengumuman   Int      @id @default(autoincrement())
+  id_kelas        Int
+  id_pengajar     Int
+  isi             String
+  dibuat_pada     DateTime @default(now())
+  diperbarui_pada DateTime @default(now()) @updatedAt
+
+  kelas_pelatihan kelas_pelatihan @relation(fields: [id_kelas], references: [id_kelas], onDelete: Cascade)
+  pengajar        pengguna        @relation(fields: [id_pengajar], references: [id_pengguna])
+
+  @@index([id_kelas, dibuat_pada])
 }
 
 // Jadwal kegiatan dosen (#71): waktu dosen TIDAK bisa mengajar di UPT (mengajar S1, rapat, dll).

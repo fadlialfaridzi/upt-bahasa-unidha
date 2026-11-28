@@ -14,8 +14,10 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import ToeflJadwalPage from './pages/toefl/ToeflJadwalPage.jsx';
 import PelatihanPage from './pages/pelatihan/PelatihanPage.jsx';
 import TerjemahanPage from './pages/terjemahan/TerjemahanPage.jsx';
+import ValidasiSertifikatPage from './pages/sertifikat/ValidasiSertifikatPage.jsx';
 import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard.jsx';
 import SuperAdminUsersPage from './pages/dashboard/SuperAdminUsersPage.jsx';
+import SuperAdminOverrideToeflPage from './pages/dashboard/SuperAdminOverrideToeflPage.jsx';
 import AdminDashboard from './pages/dashboard/AdminDashboard.jsx';
 import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
@@ -23,17 +25,24 @@ import MahasiswaPelatihanPage from './pages/dashboard/mahasiswa/MahasiswaPelatih
 import MahasiswaPresensiEwsPage from './pages/dashboard/mahasiswa/MahasiswaPresensiEwsPage.jsx';
 import MahasiswaTerjemahanPage from './pages/dashboard/mahasiswa/MahasiswaTerjemahanPage.jsx';
 import TagihanToeflPage from './pages/dashboard/mahasiswa/TagihanToeflPage.jsx';
+import MahasiswaAbsensiToeflPage from './pages/dashboard/mahasiswa/MahasiswaAbsensiToeflPage.jsx';
+import MahasiswaTerjemahanPage from './pages/dashboard/mahasiswa/MahasiswaTerjemahanPage.jsx';
+import TagihanSayaPage from './pages/dashboard/mahasiswa/TagihanSayaPage.jsx';
+import MahasiswaKelasSayaPage from './pages/dashboard/mahasiswa/MahasiswaKelasSayaPage.jsx';
 import ToeflDaftarPage from './pages/toefl/ToeflDaftarPage.jsx';
 import KelasAdminPage from './pages/dashboard/admin/KelasAdminPage.jsx';
 import JadwalKelasPage from './pages/dashboard/admin/JadwalKelasPage.jsx';
 import ToeflSesiPage from './pages/dashboard/admin/ToeflSesiPage.jsx';
 import ToeflSesiFormPage from './pages/dashboard/admin/ToeflSesiFormPage.jsx';
+import ToeflAbsensiQrPage from './pages/dashboard/admin/ToeflAbsensiQrPage.jsx';
 import VerifikasiPembayaranPage from './pages/dashboard/admin/VerifikasiPembayaranPage.jsx';
 import AdminHasilTerjemahanPage from './pages/dashboard/admin/AdminHasilTerjemahanPage.jsx';
 import ToeflKuotaPage from './pages/dashboard/admin/ToeflKuotaPage.jsx';
 import KegiatanDosenPage from './pages/dashboard/dosen/KegiatanDosenPage.jsx';
 import KelasSayaPage from './pages/dashboard/dosen/KelasSayaPage.jsx';
 import JobOrderTerjemahanPage from './pages/dashboard/penerjemah/JobOrderTerjemahanPage.jsx';
+import PresensiPertemuanPage from './pages/dashboard/dosen/PresensiPertemuanPage.jsx';
+import RuangKelasPage from './pages/dashboard/kelas/RuangKelasPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 function App() {
@@ -52,6 +61,7 @@ function App() {
             <Route index element={<DashboardRedirect />} />
             <Route path="super-admin" element={<RoleRoute dashboard="superadmin"><SuperAdminDashboard /></RoleRoute>} />
             <Route path="super-admin/users" element={<RoleRoute dashboard="superadmin"><SuperAdminUsersPage /></RoleRoute>} />
+            <Route path="super-admin/override-toefl" element={<RoleRoute dashboard="superadmin"><SuperAdminOverrideToeflPage /></RoleRoute>} />
             <Route path="admin"       element={<RoleRoute dashboard="admin"><AdminDashboard /></RoleRoute>} />
             <Route path="admin/kelas" element={<RoleRoute dashboard="admin"><KelasAdminPage /></RoleRoute>} />
             <Route path="admin/kelas/:id/jadwal" element={<RoleRoute dashboard="admin"><JadwalKelasPage /></RoleRoute>} />
@@ -60,6 +70,7 @@ function App() {
             <Route path="admin/toefl/sesi" element={<RoleRoute dashboard="admin"><ToeflSesiPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/tambah" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/:id/edit" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />
+            <Route path="admin/toefl/sesi/:id/absensi" element={<RoleRoute dashboard="admin"><ToeflAbsensiQrPage /></RoleRoute>} />
             <Route path="admin/pembayaran" element={<RoleRoute dashboard="admin"><VerifikasiPembayaranPage /></RoleRoute>} />
             <Route path="admin/terjemahan/hasil" element={<RoleRoute dashboard="admin"><AdminHasilTerjemahanPage /></RoleRoute>} />
             <Route path="dosen"       element={<RoleRoute dashboard="dosen"><DosenDashboard /></RoleRoute>} />
@@ -67,12 +78,19 @@ function App() {
             <Route path="dosen/kelas" element={<RoleRoute dashboard="dosen"><KelasSayaPage /></RoleRoute>} />
             <Route path="penerjemah" element={<RoleRoute dashboard="penerjemah"><JobOrderTerjemahanPage /></RoleRoute>} />
             <Route path="dosen/penerjemahan" element={<Navigate to="/dashboard/penerjemah" replace />} />
+            <Route path="dosen/kelas/:idKelas/presensi/:idPertemuan" element={<RoleRoute dashboard="dosen"><PresensiPertemuanPage /></RoleRoute>} />
+            <Route path="dosen/kelas/:idKelas" element={<RoleRoute dashboard="dosen"><RuangKelasPage /></RoleRoute>} />
+            <Route path="dosen/kelas/:idKelas/materi" element={<RoleRoute dashboard="dosen"><RuangKelasPage tabAwal="materi" /></RoleRoute>} />
             <Route path="mahasiswa"   element={<RoleRoute dashboard="mahasiswa"><MahasiswaDashboard /></RoleRoute>} />
             <Route path="mahasiswa/pelatihan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPelatihanPage /></RoleRoute>} />
+            <Route path="mahasiswa/kelas" element={<RoleRoute dashboard="mahasiswa"><MahasiswaKelasSayaPage /></RoleRoute>} />
+            <Route path="mahasiswa/kelas/:idKelas" element={<RoleRoute dashboard="mahasiswa"><RuangKelasPage /></RoleRoute>} />
+            <Route path="mahasiswa/tagihan" element={<RoleRoute dashboard="mahasiswa"><TagihanSayaPage /></RoleRoute>} />
             <Route path="mahasiswa/presensi-ews" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPresensiEwsPage /></RoleRoute>} />
             <Route path="mahasiswa/terjemahan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaTerjemahanPage /></RoleRoute>} />
-            <Route path="mahasiswa/toefl/tagihan" element={<RoleRoute dashboard="mahasiswa"><TagihanToeflPage /></RoleRoute>} />
+            <Route path="mahasiswa/toefl/tagihan" element={<Navigate to="/dashboard/mahasiswa/tagihan?layanan=toefl" replace />} />
             <Route path="mahasiswa/toefl" element={<RoleRoute dashboard="mahasiswa"><ToeflDaftarPage /></RoleRoute>} />
+            <Route path="mahasiswa/absensi-toefl" element={<RoleRoute dashboard="mahasiswa"><MahasiswaAbsensiToeflPage /></RoleRoute>} />
           </Route>
         </Route>
 
@@ -82,6 +100,8 @@ function App() {
           <Route path="register" element={<RegisterPage />} />
           <Route path="toefl" element={<ToeflJadwalPage />} />
           <Route path="pelatihan" element={<PelatihanPage />} />
+          <Route path="validasi-sertifikat" element={<ValidasiSertifikatPage />} />
+          <Route path="validasi-sertifikat/:kode" element={<ValidasiSertifikatPage />} />
           <Route element={<PrivateRoute />}>
             <Route path="toefl/daftar/:jadwalId" element={<ToeflDaftarPage />} />
             <Route path="terjemahan" element={<TerjemahanPage />} />

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../../services/api.js';
 import Icon from '../../../components/ui/Icon.jsx';
@@ -74,6 +75,22 @@ export default function MahasiswaPresensiEwsPage() {
       setSubmittingToken(false);
     }
   };
+
+  // QR dosen berisi tautan ke halaman ini (?token=...). Bila dibuka dari kamera HP biasa,
+  // kirim presensi otomatis sekali lalu hapus token dari URL.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tokenUrl = searchParams.get('token');
+  const tokenTerkirim = useRef(null);
+  useEffect(() => {
+    if (!tokenUrl || tokenTerkirim.current === tokenUrl) return;
+    tokenTerkirim.current = tokenUrl;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('token');
+      return next;
+    }, { replace: true });
+    handleScanFromCamera(tokenUrl);
+  }, [tokenUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedKelas = kelasEws.find((k) => k.id_kelas === selectedKelasId) || kelasEws[0];
 

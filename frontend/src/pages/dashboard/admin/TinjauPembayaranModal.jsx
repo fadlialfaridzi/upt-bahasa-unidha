@@ -61,7 +61,9 @@ function TinjauPembayaranModal({ pembayaran: p, onClose, onDone }) {
     }
   };
 
-  const selisih = Number(p.nominal) !== Number(p.cicilan ? p.cicilan.nominal : p.tagihan.total_tagihan);
+  // Sistem tidak tahu jumlah yang benar-benar ditransfer (peserta tidak mengisinya);
+  // admin mencocokkan jumlah di foto bukti dengan jumlah yang harus dibayar ini.
+  const harusDibayar = p.cicilan ? p.cicilan.nominal : p.tagihan.total_tagihan;
 
   return (
     <Modal
@@ -121,13 +123,15 @@ function TinjauPembayaranModal({ pembayaran: p, onClose, onDone }) {
             <dd>{p.layanan.nama}</dd>
             <dt>Jenis pembayaran</dt>
             <dd>{p.cicilan ? `Cicilan ke-${p.cicilan.cicilan_ke} dari ${p.cicilan.jumlah_cicilan ?? '?'} (${p.cicilan.kode_tagihan_termin})` : 'Lunas (sekali bayar)'}</dd>
-            <dt>Nominal dibayar</dt>
+            <dt>Harus dibayar</dt>
             <dd>
-              <strong className="nominal">{formatRupiah(p.nominal)}</strong>
-              {selisih && <span className="text-warning">Berbeda dari tagihan: {formatRupiah(p.cicilan ? p.cicilan.nominal : p.tagihan.total_tagihan)}</span>}
+              <strong className="nominal">{formatRupiah(harusDibayar)}</strong>
+              <span>
+                {p.cicilan
+                  ? `Cicilan ke-${p.cicilan.cicilan_ke} dari total tagihan ${formatRupiah(p.tagihan.total_tagihan)}`
+                  : p.tagihan.batas_bayar && `Batas bayar ${formatTanggal(p.tagihan.batas_bayar)}`}
+              </span>
             </dd>
-            <dt>Total tagihan</dt>
-            <dd>{formatRupiah(p.tagihan.total_tagihan)}{p.tagihan.batas_bayar && <span>Batas bayar {formatTanggal(p.tagihan.batas_bayar)}</span>}</dd>
             <dt>Diunggah</dt>
             <dd>{waktu(p.tanggal_unggah)}</dd>
             {!bisaDiproses && (
@@ -173,7 +177,7 @@ function TinjauPembayaranModal({ pembayaran: p, onClose, onDone }) {
           )}
           {bisaDiproses && mode !== 'tolak' && (
             <p className="field-hint">
-              Pastikan nominal & rekening tujuan sesuai. Menerima pembayaran akan memverifikasi pendaftaran peserta
+              Cocokkan jumlah transfer dan rekening tujuan pada foto bukti dengan jumlah yang harus dibayar. Menerima pembayaran akan memverifikasi pendaftaran peserta
               {p.cicilan ? ' dan menerbitkan termin cicilan berikutnya' : ''}.
             </p>
           )}

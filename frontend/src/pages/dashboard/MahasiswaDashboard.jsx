@@ -61,6 +61,14 @@ function MahasiswaDashboard() {
       badgeClass: 'badge-accent',
     },
     {
+      icon: 'qr',
+      title: 'Absensi TOEFL',
+      text: 'Pindai QR absensi ujian TOEFL & pantau status kehadiran sesi Anda',
+      path: '/dashboard/mahasiswa/absensi-toefl',
+      badge: 'Scan QR',
+      badgeClass: 'badge-success',
+    },
+    {
       icon: 'languages',
       title: 'Jasa Penerjemahan',
       text: 'Ajukan penerjemahan dokumen resmi & akademik',
@@ -147,7 +155,7 @@ function MahasiswaDashboard() {
           icon="wallet"
           footer={
             <Link
-              to="/dashboard/mahasiswa/pelatihan?tab=tagihan"
+              to="/dashboard/mahasiswa/tagihan"
               className="btn btn-outline"
               style={{ fontSize: '0.82rem', textDecoration: 'none', width: '100%', justifyContent: 'center' }}
             >
@@ -355,7 +363,7 @@ function MahasiswaDashboard() {
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         <Link
-                          to="/dashboard/mahasiswa/pelatihan?tab=tagihan"
+                          to="/dashboard/mahasiswa/tagihan"
                           className="btn btn-outline"
                           style={{ fontSize: '0.78rem', padding: '4px 10px', textDecoration: 'none' }}
                         >

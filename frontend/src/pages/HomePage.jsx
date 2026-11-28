@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext.jsx';
 import { dashboardPathFor } from '../config/roles.js';
@@ -42,16 +42,18 @@ const STEPS = [
 
 function HomePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [kode, setKode] = useState('');
   const portalPath = user ? dashboardPathFor(user.role) : '/login';
 
   const handleVerify = (e) => {
     e.preventDefault();
-    if (!kode.trim()) {
+    const cleaned = kode.trim();
+    if (!cleaned) {
       toast.warn('Masukkan nomor sertifikat atau kode verifikasi terlebih dahulu.');
       return;
     }
-    toast.info('Fitur validasi sertifikat sedang dikembangkan.');
+    navigate(`/validasi-sertifikat?kode=${encodeURIComponent(cleaned)}`);
   };
 
   return (
@@ -192,7 +194,12 @@ function HomePage() {
                   <Icon name="shield" size={18} /> Periksa
                 </button>
               </div>
-              <p className="verify-hint">Validasi dapat dilakukan tanpa login.</p>
+              <p className="verify-hint">
+                Validasi dapat dilakukan tanpa login.{' '}
+                <Link to="/validasi-sertifikat" style={{ fontWeight: 600, textDecoration: 'underline' }}>
+                  Buka halaman validasi &amp; pindai QR
+                </Link>
+              </p>
             </form>
           </div>
         </div>

@@ -13,6 +13,11 @@ import kegiatanRoutes from './routes/kegiatan.routes.js';
 import { dosenRoutes, adminPelatihanRoutes } from './routes/dashboard.routes.js';
 import pembayaranRoutes from './routes/pembayaran.routes.js';
 import notifikasiRoutes from './routes/notifikasi.routes.js';
+import presensiRoutes from './routes/presensi.routes.js';
+import materiRoutes from './routes/materi.routes.js';
+import ruangKelasRoutes from './routes/ruang-kelas.routes.js';
+import tagihanRoutes from './routes/tagihan.routes.js';
+import sertifikatRoutes from './routes/sertifikat.routes.js';
 
 dotenv.config();
 
@@ -27,7 +32,11 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files for uploads (support /uploads maupun /api/uploads)
+// Static files for uploads (support /uploads maupun /api/uploads).
+// Materi baru (uploads/materi) hanya bisa diunduh lewat /api/materi/:id/unduh yang dicek aksesnya.
+const tolakMateriPublik = (req, res) => res.status(404).json({ message: 'Route tidak ditemukan' });
+app.use('/uploads/materi', tolakMateriPublik);
+app.use('/api/uploads/materi', tolakMateriPublik);
 app.use('/uploads', express.static('uploads'));
 app.use('/api/uploads', express.static('uploads'));
 
@@ -44,6 +53,11 @@ app.use('/api/dosen', dosenRoutes);
 app.use('/api/admin-pelatihan', adminPelatihanRoutes);
 app.use('/api/pembayaran', pembayaranRoutes);
 app.use('/api/notifikasi', notifikasiRoutes);
+app.use('/api/presensi', presensiRoutes);
+app.use('/api/materi', materiRoutes);
+app.use('/api/ruang-kelas', ruangKelasRoutes);
+app.use('/api/tagihan', tagihanRoutes);
+app.use('/api/sertifikat', sertifikatRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

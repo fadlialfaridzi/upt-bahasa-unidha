@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { href: '/', label: 'Beranda', hash: '' },
   { href: '/#layanan', label: 'Layanan', hash: '#layanan' },
   { href: '/#alur', label: 'Alur Layanan', hash: '#alur' },
-  { href: '/#validasi', label: 'Validasi Sertifikat', hash: '#validasi' },
+  { to: '/validasi-sertifikat', label: 'Validasi Sertifikat' },
 ];
 
 export function Brand() {
@@ -28,7 +28,11 @@ function Navbar() {
   const { pathname, hash } = useLocation();
   const [open, setOpen] = useState(false);
 
-  const isActive = (link) => pathname === '/' && hash === link.hash;
+  const isActive = (link) => (
+    link.to
+      ? pathname.startsWith(link.to)
+      : pathname === '/' && hash === link.hash
+  );
 
   return (
     <header className="site-header">
@@ -37,14 +41,25 @@ function Navbar() {
 
         <nav className={`site-nav ${open ? 'open' : ''}`} aria-label="Navigasi utama">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={isActive(link) ? 'active' : ''}
-              onClick={() => setOpen(false)}
-            >
-              {link.label}
-            </a>
+            link.to ? (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={isActive(link) ? 'active' : ''}
+                onClick={() => setOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className={isActive(link) ? 'active' : ''}
+                onClick={() => setOpen(false)}
+              >
+                {link.label}
+              </a>
+            )
           ))}
         </nav>
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { dashboardPathFor } from '../../config/roles.js';
@@ -18,6 +18,13 @@ const DEMO_PASSWORD = 'password123';
 function LoginPage() {
   const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Kembali ke halaman yang diminta sebelum login (mis. dari QR presensi) bila sesuai dashboard role-nya
+  const tujuanSetelahLogin = (role) => {
+    const from = location.state?.from;
+    const dasar = dashboardPathFor(role);
+    return typeof from === 'string' && from.startsWith(`${dasar}/`) ? from : dasar;
+  };
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState(null);
@@ -41,7 +48,7 @@ function LoginPage() {
     try {
       const data = await login(form.email, form.password);
       toast.success(`Selamat datang, ${data.nama_lengkap}!`);
-      navigate(dashboardPathFor(data.role), { replace: true });
+      navigate(tujuanSetelahLogin(data.role), { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal masuk. Periksa koneksi ke server.');
     } finally {

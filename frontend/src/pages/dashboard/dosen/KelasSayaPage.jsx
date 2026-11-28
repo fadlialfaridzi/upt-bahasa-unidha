@@ -1,96 +1,69 @@
-// Kelas saya (Dosen): semua kelas yang diampu beserta pertemuannya - bagian #70
+// Kelas saya (Dosen): daftar kelas yang diampu sebagai kartu. Detail pertemuan, presensi, materi,
+// dan pengumuman ada di ruang kelas masing-masing (dosen/kelas/:idKelas).
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../../services/api.js';
 import Icon from '../../../components/ui/Icon.jsx';
 import { EmptyState, PageHeader } from '../../../components/dashboard/Widgets.jsx';
 import { Meter } from '../../../components/dashboard/Pelatihan.jsx';
-import {
-  JENIS_PELATIHAN, STATUS_KELAS, STATUS_PRESENSI, STATUS_WAKTU, TIPE_KELAS, formatTanggal,
-} from '../../../config/pelatihan.js';
-import KelolaPertemuanModal from './KelolaPertemuanModal.jsx';
+import { JENIS_PELATIHAN, STATUS_KELAS, TIPE_KELAS, formatTanggal } from '../../../config/pelatihan.js';
 
-const TAMPIL_AWAL = 5;
-
-function KelasCard({ k, onKelolaPertemuan }) {
-  const [semua, setSemua] = useState(false);
-  // Default: tampilkan mulai dari pertemuan yang belum selesai
-  const idxBerikut = Math.max(0, k.pertemuan.findIndex((p) => p.status !== 'selesai'));
-  const daftar = semua ? k.pertemuan : k.pertemuan.slice(idxBerikut, idxBerikut + TAMPIL_AWAL);
+function KelasTile({ k }) {
   const status = STATUS_KELAS[k.status];
+  const ruang = `/dashboard/dosen/kelas/${k.id_kelas}`;
+  // Pertemuan hari ini (WIB) yang belum selesai atau presensinya masih dibuka -> tombol pintas presensi
+  const tanggalHariIni = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+  const hariIni = k.pertemuan.find((p) => p.tanggal === tanggalHariIni && (p.status !== 'selesai' || p.status_presensi === 'dibuka'));
+  const berikutnya = k.pertemuan.find((p) => p.status !== 'selesai');
+  const belumDicatat = k.pertemuan.filter((p) => p.status === 'selesai' && !p.status_presensi).length;
 
   return (
-    <section className="panel kelas-card">
-      <header className="kelas-card-head">
-        <div>
-          <h2 className="panel-title">{k.nama_kelas}</h2>
-          <p className="panel-sub">{JENIS_PELATIHAN[k.jenis_pelatihan]} · {TIPE_KELAS[k.tipe_kelas]}</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+    <article className="panel kelas-tile">
+      <Link to={ruang} className={`kelas-tile-band jenis-${k.jenis_pelatihan}`}>
+        <div className="kelas-tile-band-atas">
+          <p>{JENIS_PELATIHAN[k.jenis_pelatihan]} · {TIPE_KELAS[k.tipe_kelas]}</p>
           <span className={`badge ${status.badge}`}>{status.label}</span>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            onClick={() => onKelolaPertemuan(k)}
-          >
-            <Icon name="qr" size={15} /> Kelola Pertemuan & Presensi QR
-          </button>
         </div>
-      </header>
+        <h2>{k.nama_kelas}</h2>
+        <span>{k.peserta}/{k.kuota_maks} peserta terverifikasi</span>
+      </Link>
 
-      <div className="kelas-card-stats">
-        <div><strong>{k.peserta}/{k.kuota_maks}</strong><span>Peserta terverifikasi</span></div>
-        <div><strong>{k.pertemuan.length}</strong><span>Pertemuan Anda</span></div>
-        <div><strong>{k.pertemuan_selesai}/{k.jumlah_pertemuan}</strong><span>Selesai</span></div>
-        <div><strong>{k.kehadiran === null ? '—' : `${k.kehadiran}%`}</strong><span>Kehadiran</span></div>
+      <div className="kelas-tile-body">
+        <div className="kelas-tile-progres">
+          <span>Pertemuan selesai <strong>{k.pertemuan_selesai}/{k.jumlah_pertemuan}</strong></span>
+          <span>Kehadiran <strong>{k.kehadiran === null ? '—' : `${k.kehadiran}%`}</strong></span>
+        </div>
+        <Meter value={k.pertemuan_selesai} max={k.jumlah_pertemuan} label={`Progres ${k.nama_kelas}`} />
+        <p>
+          <Icon name="calendar" size={15} />
+          {berikutnya
+            ? `${berikutnya.status === 'berlangsung' ? 'Sedang berlangsung' : 'Berikutnya'}: ${formatTanggal(berikutnya.tanggal, { weekday: 'short', day: 'numeric', month: 'short' })}, ${berikutnya.jam_mulai}${berikutnya.ruang ? ` · ${berikutnya.ruang}` : ''}`
+            : 'Semua pertemuan Anda sudah selesai'}
+        </p>
+        {belumDicatat > 0 && (
+          <Link to={`${ruang}?tab=presensi`} className="kelas-tile-peringatan">
+            <Icon name="alert" size={15} /> {belumDicatat} pertemuan belum dicatat presensinya
+          </Link>
+        )}
       </div>
-      <Meter value={k.pertemuan_selesai} max={k.jumlah_pertemuan} label={`Progres ${k.nama_kelas}`} />
 
-      <div className="table-wrap" style={{ marginTop: 16 }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th className="col-ke">Ke</th>
-              <th>Tanggal</th>
-              <th>Jam</th>
-              <th>Ruang</th>
-              <th>Topik</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {daftar.map((p) => (
-              <tr key={p.id_pertemuan} className={p.status === 'selesai' ? 'is-muted' : ''}>
-                <td className="col-ke"><span className="ke-badge">{p.pertemuan_ke}</span></td>
-                <td className="nowrap">
-                  <p className="cell-title">{p.hari}</p>
-                  <p className="cell-sub">{formatTanggal(p.tanggal)}</p>
-                </td>
-                <td className="nowrap">{p.jam_mulai}–{p.jam_selesai}</td>
-                <td>{p.ruang || <span className="cell-sub">—</span>}</td>
-                <td>{p.topik || <span className="cell-sub">—</span>}</td>
-                <td className="nowrap">
-                  <span className={`badge ${STATUS_WAKTU[p.status].badge}`}>{STATUS_WAKTU[p.status].label}</span>
-                  {p.status_presensi && <span className={`badge ${STATUS_PRESENSI[p.status_presensi].badge}`} style={{ marginLeft: 6 }}>{p.hadir} hadir</span>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {k.pertemuan.length > TAMPIL_AWAL && (
-        <button type="button" className="link-btn kelas-card-toggle" onClick={() => setSemua((v) => !v)}>
-          {semua ? 'Tampilkan lebih sedikit' : `Tampilkan semua ${k.pertemuan.length} pertemuan`}
-        </button>
-      )}
-    </section>
+      <footer className="kelas-tile-aksi">
+        {hariIni && (
+          <Link to={`${ruang}/presensi/${hariIni.id_pertemuan}`} className="btn btn-primary btn-sm">
+            <Icon name="qr" size={15} /> {hariIni.status_presensi === 'dibuka' ? 'Lihat QR presensi' : 'Presensi hari ini'}
+          </Link>
+        )}
+        <Link to={ruang} className={`btn btn-sm ${hariIni ? 'btn-outline' : 'btn-primary'}`}>
+          Buka kelas <Icon name="arrowRight" size={15} />
+        </Link>
+      </footer>
+    </article>
   );
 }
 
 function KelasSayaPage() {
   const [kelas, setKelas] = useState(null);
   const [gagal, setGagal] = useState(false);
-  const [modalKelas, setModalKelas] = useState(null);
 
   const load = useCallback(async () => {
     setGagal(false);
@@ -111,7 +84,7 @@ function KelasSayaPage() {
       <PageHeader
         eyebrow="Dosen / Kelas saya"
         title="Kelas yang saya ampu"
-        subtitle="Daftar kelas dan pertemuan yang dijadwalkan admin untuk Anda."
+        subtitle="Pilih kelas untuk mengelola pengumuman, materi, presensi, dan peserta."
       />
       {gagal ? (
         <div className="table-message">
@@ -125,19 +98,7 @@ function KelasSayaPage() {
           <EmptyState icon="graduation" title="Belum ada kelas" text="Kelas akan muncul setelah admin menjadwalkan Anda sebagai pengajar." />
         </section>
       ) : (
-        <div className="stack">
-          {kelas.map((k) => (
-            <KelasCard key={k.id_kelas} k={k} onKelolaPertemuan={(item) => setModalKelas(item)} />
-          ))}
-        </div>
-      )}
-
-      {modalKelas && (
-        <KelolaPertemuanModal
-          kelas={modalKelas}
-          onClose={() => setModalKelas(null)}
-          onUpdated={load}
-        />
+        <div className="kelas-tile-grid">{kelas.map((k) => <KelasTile key={k.id_kelas} k={k} />)}</div>
       )}
     </>
   );

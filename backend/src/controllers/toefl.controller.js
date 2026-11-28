@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 
 const SESI_STATUS = ['terbuka', 'menunggu_override', 'ujian_dibuka', 'dijadwalkan', 'selesai', 'dibatalkan'];
+const RELEASEABLE_SESI_STATUS = ['terbuka', 'menunggu_override', 'ujian_dibuka'];
+const RELEASE_ALLOWED_ROLES = ['staf_upt', 'super_admin'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
 
@@ -33,12 +35,16 @@ const kodeTagihanToefl = async (tx) => {
 
 const serializePendaftaran = (item) => {
   const pembayaran = item.tagihan?.pembayaran?.[0] ?? null;
+  // Jangan pernah kirim token_qr sesi kepada peserta melalui endpoint pendaftaran/tagihan
+  const sesi = item.sesi_toefl
+    ? (({ token_qr: _tokenQr, ...rest }) => rest)(item.sesi_toefl)
+    : null;
   return {
     id_pendaftaran: item.id_pendaftaran,
     status: item.status,
     tanggal_daftar: item.tanggal_daftar,
     pengguna: item.pengguna,
-    sesi: item.sesi_toefl,
+    sesi,
     tagihan: item.tagihan ? {
       id_tagihan: item.tagihan.id_tagihan,
       kode_tagihan: item.tagihan.kode_tagihan,
@@ -142,7 +148,7 @@ const parseSesiInput = (body, { partial = false } = {}) => {
 
 const includeCounts = {
   _count: { select: { pendaftaran_toefl: true } },
-  override_kuota: { orderBy: { tanggal_ajuan: 'desc' }, take: 1 },
+  override_kuota: { orderBy: [{ tanggal_ajuan: 'desc' }, { id_override: 'desc' }], take: 1 },
 };
 
 const toResponse = ({ _count, override_kuota, ...sesi }) => ({
@@ -599,23 +605,134 @@ export const updateSesi = async (req, res) => {
   }
 };
 
+/**
+ * Helper internal UC-21 & UC-28:
+ * Memvalidasi kelayakan rilis jadwal sesi TOEFL dan melakukan update atomik di dalam transaksi.
+ * - Override berstatus 'disetujui' untuk sesi terkait hanya menjadi izin melewati kuota minimum,
+ *   tidak melewati validasi kelengkapan/validitas jadwal maupun status sesi.
+ */
+const prosesRilisSesi = async (tx, req, { id, pesanJadwalBelumLengkap, formatPesanKuota, buatAuditDetail }) => {
+  const sesi = await tx.sesi_toefl.findUnique({ where: { id_sesi: id } });
+  if (!sesi) {
+    const err = new Error('Sesi TOEFL tidak ditemukan');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (!RELEASEABLE_SESI_STATUS.includes(sesi.status)) {
+    const err = new Error(
+      sesi.status === 'dijadwalkan'
+        ? 'Jadwal sesi TOEFL sudah dirilis sebelumnya'
+        : `Sesi dengan status "${sesi.status || 'tidak diketahui'}" tidak dapat dirilis`,
+    );
+    err.statusCode = sesi.status === 'dijadwalkan' ? 409 : 400;
+    throw err;
+  }
+
+  const ruang = typeof sesi.ruang === 'string' ? sesi.ruang.trim() : '';
+  if (!sesi.tanggal || !sesi.jam_mulai || !sesi.jam_selesai || !ruang) {
+    const err = new Error(pesanJadwalBelumLengkap);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (sesi.jam_mulai >= sesi.jam_selesai) {
+    const err = new Error('Waktu selesai harus setelah waktu mulai');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const jumlahTerverifikasi = await tx.pendaftaran_toefl.count({
+    where: { id_sesi: id, status: 'terverifikasi' },
+  });
+
+  let overrideDisetujui = null;
+  if (jumlahTerverifikasi < sesi.kuota_min) {
+    const overrideTerakhir = await tx.override_kuota.findFirst({
+      where: { id_sesi: id },
+      orderBy: [{ tanggal_ajuan: 'desc' }, { id_override: 'desc' }],
+    });
+
+    if (
+      overrideTerakhir
+      && overrideTerakhir.id_sesi === id
+      && overrideTerakhir.status === 'disetujui'
+    ) {
+      overrideDisetujui = overrideTerakhir;
+    } else {
+      let detailOverride = '';
+      if (overrideTerakhir?.id_sesi === id && overrideTerakhir.status === 'diajukan') {
+        detailOverride = ' (pengajuan override masih menunggu persetujuan Kepala UPT Bahasa)';
+      } else if (overrideTerakhir?.id_sesi === id && overrideTerakhir.status === 'ditolak') {
+        detailOverride = ' (pengajuan override ditolak)';
+      }
+      const err = new Error(`${formatPesanKuota(jumlahTerverifikasi, sesi.kuota_min)}${detailOverride}`);
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+
+  const tanggalRilis = new Date();
+  const klaimRilis = await tx.sesi_toefl.updateMany({
+    where: {
+      id_sesi: id,
+      status: { in: RELEASEABLE_SESI_STATUS },
+    },
+    data: {
+      status: 'dijadwalkan',
+      tanggal_rilis: tanggalRilis,
+    },
+  });
+
+  if (klaimRilis.count === 0) {
+    const err = new Error('Jadwal sesi TOEFL sudah dirilis atau status sesi telah berubah');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  await catatAudit(tx, req, {
+    aksi: 'rilis',
+    entitas: 'sesi_toefl',
+    idEntitas: id,
+    detail: buatAuditDetail({ sesi, jumlahTerverifikasi, overrideDisetujui }),
+  });
+
+  return {
+    ...sesi,
+    status: 'dijadwalkan',
+    tanggal_rilis: tanggalRilis,
+  };
+};
+
 export const rilisSesi = async (req, res) => {
   try {
-    const id = parseId(req.params.id);
+    if (!RELEASE_ALLOWED_ROLES.includes(req.user?.role)) {
+      return res.status(403).json({ message: 'Akses ditolak, hanya untuk admin' });
+    }
+    const id = parseId(req.params?.id);
     if (!id) return res.status(400).json({ message: 'ID sesi tidak valid' });
-    const sesi = await prisma.sesi_toefl.findUnique({ where: { id_sesi: id }, include: includeCounts });
-    if (!sesi) return res.status(404).json({ message: 'Sesi TOEFL tidak ditemukan' });
-    if (!sesi.tanggal || !sesi.jam_mulai || !sesi.jam_selesai || !sesi.ruang) return res.status(400).json({ message: 'Tanggal, waktu, dan ruang ujian wajib dilengkapi sebelum rilis' });
-    const jumlahLunas = await prisma.pendaftaran_toefl.count({ where: { id_sesi: id, status: 'terverifikasi' } });
-    if (jumlahLunas < sesi.kuota_min) return res.status(400).json({ message: `Belum memenuhi kuota minimum. Terverifikasi ${jumlahLunas}/${sesi.kuota_min} peserta` });
-    const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.sesi_toefl.update({ where: { id_sesi: id }, data: { status: 'dijadwalkan', tanggal_rilis: new Date() } });
-      await catatAudit(tx, req, { aksi: 'rilis', entitas: 'sesi_toefl', idEntitas: id, detail: { nama_sesi: sesi.nama_sesi, jumlah_peserta: jumlahLunas } });
-      return result;
-    });
+
+    const updated = await prisma.$transaction((tx) => prosesRilisSesi(tx, req, {
+      id,
+      pesanJadwalBelumLengkap: 'Tanggal, waktu, dan ruang ujian wajib dilengkapi sebelum rilis',
+      formatPesanKuota: (jumlahLunas, kuotaMin) => `Belum memenuhi kuota minimum. Terverifikasi ${jumlahLunas}/${kuotaMin} peserta`,
+      buatAuditDetail: ({ sesi, jumlahTerverifikasi, overrideDisetujui }) => ({
+        nama_sesi: sesi.nama_sesi,
+        jumlah_peserta: jumlahTerverifikasi,
+        via_override: Boolean(overrideDisetujui),
+        ...(overrideDisetujui ? { id_override: overrideDisetujui.id_override } : {}),
+      }),
+    }));
+
     res.json({ message: 'Jadwal sesi TOEFL berhasil dirilis', data: await getSesiResponse(updated.id_sesi) });
   } catch (error) {
-    res.status(500).json({ message: 'Gagal merilis sesi TOEFL', error: error.message });
+    const statusCode = error.statusCode || error.status || 500;
+    if (statusCode === 500) {
+      console.error('[rilisSesi] Internal Error:', error);
+    }
+    res.status(statusCode).json({
+      message: statusCode !== 500 ? error.message : 'Gagal merilis sesi TOEFL',
+    });
   }
 };
 
@@ -644,7 +761,13 @@ export const getKuotaToefl = async (req, res) => {
     if (q?.trim()) where.nama_sesi = { contains: q.trim(), mode: 'insensitive' };
     const sesi = await prisma.sesi_toefl.findMany({
       where,
-      include: { _count: { select: { pendaftaran_toefl: true } } },
+      include: {
+        _count: { select: { pendaftaran_toefl: true } },
+        override_kuota: {
+          orderBy: [{ tanggal_ajuan: 'desc' }, { id_override: 'desc' }],
+          take: 1,
+        },
+      },
       orderBy: [{ tanggal: 'desc' }, { id_sesi: 'desc' }],
     });
     const data = await Promise.all(sesi.map(async (item) => {
@@ -652,12 +775,26 @@ export const getKuotaToefl = async (req, res) => {
         prisma.pendaftaran_toefl.count({ where: { id_sesi: item.id_sesi, status: 'terverifikasi' } }),
         prisma.pendaftaran_toefl.count({ where: { id_sesi: item.id_sesi, status: 'menunggu_pembayaran' } }),
       ]);
+      const { override_kuota, ...restItem } = item;
+      const kandidatOverride = override_kuota?.[0] ?? null;
+      const overrideTerakhir = kandidatOverride && kandidatOverride.id_sesi === item.id_sesi
+        ? {
+            id_override: kandidatOverride.id_override,
+            id_sesi: kandidatOverride.id_sesi,
+            status: kandidatOverride.status,
+            alasan: kandidatOverride.alasan,
+            catatan_putusan: kandidatOverride.catatan_putusan ?? null,
+            tanggal_ajuan: kandidatOverride.tanggal_ajuan,
+            tanggal_putusan: kandidatOverride.tanggal_putusan ?? null,
+          }
+        : null;
       return {
-        ...item,
+        ...restItem,
         jumlah_pendaftar: item._count.pendaftaran_toefl,
         jumlah_terverifikasi: jumlahTerverifikasi,
         jumlah_menunggu: jumlahMenunggu,
         jumlah_tersisa: Math.max(0, item.kuota_maks - jumlahTerverifikasi),
+        override_terakhir: overrideTerakhir,
       };
     }));
     const counts = await Promise.all([
@@ -723,20 +860,480 @@ export const getPendaftarSesi = async (req, res) => {
 
 export const rilisSesiDariKuota = async (req, res) => {
   try {
-    const id = parseId(req.params.id);
+    if (!RELEASE_ALLOWED_ROLES.includes(req.user?.role)) {
+      return res.status(403).json({ message: 'Akses ditolak, hanya untuk admin' });
+    }
+    const id = parseId(req.params?.id);
     if (!id) return res.status(400).json({ message: 'ID sesi tidak valid' });
-    const sesi = await prisma.sesi_toefl.findUnique({ where: { id_sesi: id } });
-    if (!sesi) return res.status(404).json({ message: 'Sesi TOEFL tidak ditemukan' });
-    if (!sesi.tanggal || !sesi.jam_mulai || !sesi.jam_selesai || !sesi.ruang) return res.status(400).json({ message: 'Tanggal, jam, dan ruang ujian harus sudah dilengkapi pada Kelola Sesi TOEFL' });
-    const terverifikasi = await prisma.pendaftaran_toefl.count({ where: { id_sesi: id, status: 'terverifikasi' } });
-    if (terverifikasi < sesi.kuota_min) return res.status(400).json({ message: `Belum memenuhi kuota minimum. Pendaftar terverifikasi ${terverifikasi}/${sesi.kuota_min}` });
-    const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.sesi_toefl.update({ where: { id_sesi: id }, data: { status: 'dijadwalkan', tanggal_rilis: new Date() } });
-      await catatAudit(tx, req, { aksi: 'rilis', entitas: 'sesi_toefl', idEntitas: id, detail: { nama_sesi: sesi.nama_sesi, jumlah_terverifikasi: terverifikasi, kuota_efektif: sesi.kuota_min } });
-      return result;
-    });
+
+    const updated = await prisma.$transaction((tx) => prosesRilisSesi(tx, req, {
+      id,
+      pesanJadwalBelumLengkap: 'Tanggal, jam, dan ruang ujian harus sudah dilengkapi pada Kelola Sesi TOEFL',
+      formatPesanKuota: (terverifikasi, kuotaMin) => `Belum memenuhi kuota minimum. Pendaftar terverifikasi ${terverifikasi}/${kuotaMin}`,
+      buatAuditDetail: ({ sesi, jumlahTerverifikasi, overrideDisetujui }) => ({
+        nama_sesi: sesi.nama_sesi,
+        jumlah_terverifikasi: jumlahTerverifikasi,
+        kuota_efektif: overrideDisetujui ? jumlahTerverifikasi : sesi.kuota_min,
+        via_override: Boolean(overrideDisetujui),
+        ...(overrideDisetujui ? { id_override: overrideDisetujui.id_override } : {}),
+      }),
+    }));
+
     res.json({ message: 'Jadwal sesi TOEFL berhasil dirilis', data: updated });
   } catch (error) {
-    res.status(500).json({ message: 'Gagal merilis jadwal sesi TOEFL', error: error.message });
+    const statusCode = error.statusCode || error.status || 500;
+    if (statusCode === 500) {
+      console.error('[rilisSesiDariKuota] Internal Error:', error);
+    }
+    res.status(statusCode).json({
+      message: statusCode !== 500 ? error.message : 'Gagal merilis jadwal sesi TOEFL',
+    });
+  }
+};
+
+export const ajukanOverrideToefl = async (req, res) => {
+  try {
+    if (req.user?.role !== 'staf_upt') {
+      return res.status(403).json({ message: 'Hanya Staf UPT yang berhak mengajukan override kuota TOEFL' });
+    }
+
+    const idSesi = parseId(req.body?.id_sesi ?? req.body?.idSesi ?? req.params?.id);
+    if (!idSesi) return res.status(400).json({ message: 'ID sesi TOEFL wajib diisi dan harus valid' });
+
+    const alasan = typeof req.body.alasan === 'string' ? req.body.alasan.trim() : '';
+    if (!alasan || alasan.length < 5) {
+      return res.status(400).json({ message: 'Alasan override wajib diisi (minimal 5 karakter)' });
+    }
+    if (alasan.length > 500) {
+      return res.status(400).json({ message: 'Alasan override maksimal 500 karakter' });
+    }
+
+    const hasil = await prisma.$transaction(async (tx) => {
+      // 1. Klaim dan ubah status sesi secara atomik.
+      // Hanya sesi berstatus "terbuka" yang bisa diklaim menjadi "menunggu_override".
+      // Jika dua request bersamaan masuk, baris ini mengunci row di database (row-level lock)
+      // sehingga request kedua akan mendapati count === 0 dan digagalkan.
+      const klaimSesi = await tx.sesi_toefl.updateMany({
+        where: { id_sesi: idSesi, status: 'terbuka' },
+        data: { status: 'menunggu_override' },
+      });
+
+      if (klaimSesi.count === 0) {
+        const sesiSaatIni = await tx.sesi_toefl.findUnique({
+          where: { id_sesi: idSesi },
+          select: { id_sesi: true, status: true },
+        });
+
+        if (!sesiSaatIni) {
+          const err = new Error('Sesi TOEFL tidak ditemukan');
+          err.statusCode = 404;
+          throw err;
+        }
+
+        if (sesiSaatIni.status === 'menunggu_override') {
+          const err = new Error('Sesi ini sudah memiliki permohonan override yang masih menunggu persetujuan');
+          err.statusCode = 409;
+          throw err;
+        }
+
+        const err = new Error(`Override hanya dapat diajukan untuk sesi dengan status "terbuka" (status saat ini: "${sesiSaatIni.status}")`);
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Ambil detail sesi setelah diklaim
+      const sesi = await tx.sesi_toefl.findUnique({
+        where: { id_sesi: idSesi },
+      });
+
+      // 2. Cegah request override duplikat yang masih berstatus "diajukan"
+      const existingPending = await tx.override_kuota.findFirst({
+        where: { id_sesi: idSesi, status: 'diajukan' },
+      });
+      if (existingPending) {
+        const err = new Error('Sesi ini sudah memiliki permohonan override yang masih menunggu persetujuan');
+        err.statusCode = 409;
+        throw err;
+      }
+
+      // 3. Verifikasi kuota peserta terverifikasi di dalam transaksi
+      const terverifikasi = await tx.pendaftaran_toefl.count({
+        where: { id_sesi: idSesi, status: 'terverifikasi' },
+      });
+      if (terverifikasi >= sesi.kuota_min) {
+        const err = new Error(`Kuota minimum sudah terpenuhi (${terverifikasi}/${sesi.kuota_min} peserta terverifikasi). Override tidak diperlukan.`);
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // 4. Buat permohonan override
+      const override = await tx.override_kuota.create({
+        data: {
+          id_sesi: idSesi,
+          id_pengaju: req.user.id,
+          alasan,
+          status: 'diajukan',
+        },
+        include: {
+          sesi_toefl: {
+            select: {
+              id_sesi: true,
+              nama_sesi: true,
+              kuota_min: true,
+              kuota_maks: true,
+              status: true,
+            },
+          },
+          pengaju: {
+            select: {
+              id_pengguna: true,
+              nama_lengkap: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      // 5. Catat audit log
+      await catatAudit(tx, req, {
+        aksi: 'ajukan_override',
+        entitas: 'override_kuota',
+        idEntitas: override.id_override,
+        detail: {
+          id_sesi: idSesi,
+          nama_sesi: sesi.nama_sesi,
+          alasan,
+          pendaftar_terverifikasi: terverifikasi,
+          kuota_min: sesi.kuota_min,
+        },
+      });
+
+      // 6. Buat notifikasi ke Kepala UPT Bahasa (super_admin)
+      const kepalaUpt = await tx.pengguna.findMany({
+        where: {
+          status_aktif: true,
+          role: { nama_role: 'super_admin' },
+          id_pengguna: { not: req.user.id },
+        },
+        select: { id_pengguna: true },
+      });
+
+      if (kepalaUpt.length > 0) {
+        await tx.notifikasi.createMany({
+          data: kepalaUpt.map(({ id_pengguna }) => ({
+            id_pengguna,
+            jenis: 'override_toefl',
+            judul: 'Pengajuan override kuota TOEFL',
+            pesan: `Permohonan override kuota diajukan untuk sesi "${sesi.nama_sesi}". Menunggu persetujuan Kepala UPT Bahasa.`,
+          })),
+        });
+      }
+
+      return override;
+    });
+
+    res.status(201).json({
+      message: 'Pengajuan override kuota TOEFL berhasil diajukan dan menunggu persetujuan',
+      data: hasil,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || error.status || 500;
+    if (statusCode === 500) {
+      console.error('[ajukanOverrideToefl] Internal Error:', error);
+    }
+    res.status(statusCode).json({
+      message: statusCode !== 500 ? error.message : 'Gagal mengajukan override kuota TOEFL',
+    });
+  }
+};
+
+/**
+ * UC-28: Mengambil daftar permohonan override kuota TOEFL
+ * Digunakan oleh Kepala UPT (Super Admin) untuk memeriksa pengajuan override.
+ * Mendukung filter status (default: 'semua' atau 'diajukan').
+ */
+export const getDaftarOverrideToefl = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = {};
+    if (status && ['diajukan', 'disetujui', 'ditolak'].includes(status)) {
+      where.status = status;
+    }
+
+    const daftar = await prisma.override_kuota.findMany({
+      where,
+      include: {
+        sesi_toefl: {
+          select: {
+            id_sesi: true,
+            nama_sesi: true,
+            kuota_min: true,
+            kuota_maks: true,
+            status: true,
+            tanggal: true,
+            jam_mulai: true,
+            jam_selesai: true,
+            ruang: true,
+          },
+        },
+        pengaju: {
+          select: {
+            id_pengguna: true,
+            nama_lengkap: true,
+            email: true,
+            role: {
+              select: {
+                nama_role: true,
+              },
+            },
+          },
+        },
+        penyetuju: {
+          select: {
+            id_pengguna: true,
+            nama_lengkap: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: [
+        // Utamakan yang berstatus 'diajukan' terlebih dahulu
+        { tanggal_ajuan: 'desc' },
+      ],
+    });
+
+    // Urutkan status 'diajukan' di paling atas
+    daftar.sort((a, b) => {
+      if (a.status === 'diajukan' && b.status !== 'diajukan') return -1;
+      if (a.status !== 'diajukan' && b.status === 'diajukan') return 1;
+      return new Date(b.tanggal_ajuan) - new Date(a.tanggal_ajuan);
+    });
+
+    // Hitung jumlah pendaftar terverifikasi untuk setiap sesi
+    const result = await Promise.all(
+      daftar.map(async (item) => {
+        const jumlahTerverifikasi = await prisma.pendaftaran_toefl.count({
+          where: {
+            id_sesi: item.id_sesi,
+            status: 'terverifikasi',
+          },
+        });
+
+        return {
+          id_override: item.id_override,
+          status: item.status,
+          tanggal_ajuan: item.tanggal_ajuan,
+          tanggal_putusan: item.tanggal_putusan,
+          alasan: item.alasan,
+          catatan_putusan: item.catatan_putusan,
+          kuota_min: item.sesi_toefl.kuota_min,
+          jumlah_terverifikasi: jumlahTerverifikasi,
+          sesi: {
+            ...item.sesi_toefl,
+            jumlah_terverifikasi: jumlahTerverifikasi,
+          },
+          pengaju: {
+            id_pengguna: item.pengaju.id_pengguna,
+            nama_lengkap: item.pengaju.nama_lengkap,
+            email: item.pengaju.email,
+            role: item.pengaju.role?.nama_role,
+          },
+          penyetuju: item.penyetuju
+            ? {
+                id_pengguna: item.penyetuju.id_pengguna,
+                nama_lengkap: item.penyetuju.nama_lengkap,
+                email: item.penyetuju.email,
+              }
+            : null,
+        };
+      })
+    );
+
+    res.json({
+      message: 'Daftar permohonan override kuota TOEFL berhasil diambil',
+      data: result,
+    });
+  } catch (error) {
+    console.error('[getDaftarOverrideToefl] Error:', error);
+    res.status(500).json({
+      message: 'Gagal mengambil daftar permohonan override kuota TOEFL',
+    });
+  }
+};
+
+/**
+ * UC-28: Memproses keputusan approval atau rejection Override Kuota TOEFL
+ * Ketentuan:
+ * - Hanya role super_admin (Kepala UPT Bahasa) yang berhak memproses.
+ * - Prinsip Four-Eyes: id_penyetuju tidak boleh sama dengan id_pengaju.
+ * - Override harus masih berstatus 'diajukan'.
+ * - Approval: status override -> 'disetujui', status sesi tetap 'menunggu_override' (TIDAK langsung dirilis/dijadwalkan).
+ * - Rejection: status override -> 'ditolak', status sesi kembali 'terbuka'. Wajib menyertakan alasan penolakan.
+ * - Audit log dan notifikasi dikirimkan ke pengaju.
+ */
+export const putusanOverrideToefl = async (req, res) => {
+  try {
+    const idOverride = parseId(req.params?.id ?? req.body?.id_override);
+    if (!idOverride) {
+      return res.status(400).json({ message: 'ID override tidak valid' });
+    }
+
+    // Role check: hanya super_admin
+    if (req.user?.role !== 'super_admin') {
+      return res.status(403).json({
+        message: 'Hanya Kepala UPT Bahasa (Super Admin) yang berhak memberikan keputusan override',
+      });
+    }
+
+    const keputusan = req.body?.keputusan?.toLowerCase()?.trim();
+    if (!keputusan || !['setuju', 'tolak'].includes(keputusan)) {
+      return res.status(400).json({
+        message: 'Keputusan tidak valid. Pilih "setuju" atau "tolak"',
+      });
+    }
+
+    const catatanPutusan = (req.body?.catatan_putusan ?? req.body?.alasan_penolakan ?? '')?.trim();
+
+    // Rejection wajib memiliki alasan/catatan
+    if (keputusan === 'tolak') {
+      if (!catatanPutusan || catatanPutusan.length < 5) {
+        return res.status(400).json({
+          message: 'Alasan penolakan wajib diisi minimal 5 karakter',
+        });
+      }
+      if (catatanPutusan.length > 500) {
+        return res.status(400).json({
+          message: 'Alasan penolakan maksimal 500 karakter',
+        });
+      }
+    }
+
+    const hasil = await prisma.$transaction(async (tx) => {
+      // 1. Ambil data override dengan lock/cek status
+      const override = await tx.override_kuota.findUnique({
+        where: { id_override: idOverride },
+        include: {
+          sesi_toefl: true,
+          pengaju: {
+            select: {
+              id_pengguna: true,
+              nama_lengkap: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!override) {
+        const err = new Error('Permohonan override kuota tidak ditemukan');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      // Pastikan status masih 'diajukan'
+      if (override.status !== 'diajukan') {
+        const err = new Error(`Permohonan override sudah diputuskan sebelumnya dengan status "${override.status}"`);
+        err.statusCode = 409;
+        throw err;
+      }
+
+      // 2. Four-Eyes Principle: Penyetuju !== Pengaju
+      const idPenyetuju = req.user.id;
+      if (override.id_pengaju === idPenyetuju) {
+        const err = new Error('Prinsip four-eyes: Penyetuju tidak boleh merupakan pengguna yang sama dengan pengaju');
+        err.statusCode = 403;
+        throw err;
+      }
+
+      const waktuPutusan = new Date();
+      const statusOverrideBaru = keputusan === 'setuju' ? 'disetujui' : 'ditolak';
+
+      // 3. Update status override_kuota
+      // Gunakan conditional update untuk mencegah race condition
+      const updateResult = await tx.override_kuota.updateMany({
+        where: {
+          id_override: idOverride,
+          status: 'diajukan',
+        },
+        data: {
+          status: statusOverrideBaru,
+          id_penyetuju: idPenyetuju,
+          catatan_putusan: catatanPutusan || null,
+          tanggal_putusan: waktuPutusan,
+        },
+      });
+
+      if (updateResult.count === 0) {
+        const err = new Error('Permohonan override telah diproses oleh request lain');
+        err.statusCode = 409;
+        throw err;
+      }
+
+      // 4. Update status sesi
+      // Sesuai A3 & UC-28:
+      // - Jika disetujui: status sesi TETAP (atau berada pada state yang memungkinkan Staf UPT merilis di UC-21),
+      //   TIDAK langsung dirilis/dijadwalkan.
+      // - Jika ditolak: status sesi DIKEMBALIKAN menjadi 'terbuka'.
+      if (keputusan === 'tolak') {
+        await tx.sesi_toefl.update({
+          where: { id_sesi: override.id_sesi },
+          data: { status: 'terbuka' },
+        });
+      }
+
+      // 5. Catat audit log
+      await catatAudit(tx, req, {
+        aksi: keputusan === 'setuju' ? 'setujui_override' : 'tolak_override',
+        entitas: 'override_kuota',
+        idEntitas: idOverride,
+        detail: {
+          id_sesi: override.id_sesi,
+          nama_sesi: override.sesi_toefl.nama_sesi,
+          keputusan,
+          catatan_putusan: catatanPutusan || null,
+          id_pengaju: override.id_pengaju,
+          id_penyetuju: idPenyetuju,
+        },
+      });
+
+      // 6. Buat notifikasi hasil keputusan kepada pengaju
+      const pesanNotif = keputusan === 'setuju'
+        ? `Permohonan override kuota untuk sesi "${override.sesi_toefl.nama_sesi}" telah DISETUJUI oleh Kepala UPT Bahasa. Silakan lengkapi jadwal dan rilis sesi.`
+        : `Permohonan override kuota untuk sesi "${override.sesi_toefl.nama_sesi}" DITOLAK oleh Kepala UPT Bahasa. Alasan: ${catatanPutusan}`;
+
+      await tx.notifikasi.create({
+        data: {
+          id_pengguna: override.id_pengaju,
+          jenis: 'override_toefl',
+          judul: `Permohonan Override TOEFL ${keputusan === 'setuju' ? 'Disetujui' : 'Ditolak'}`,
+          pesan: pesanNotif,
+        },
+      });
+
+      return {
+        id_override: idOverride,
+        id_sesi: override.id_sesi,
+        nama_sesi: override.sesi_toefl.nama_sesi,
+        status: statusOverrideBaru,
+        id_penyetuju: idPenyetuju,
+        catatan_putusan: catatanPutusan || null,
+        tanggal_putusan: waktuPutusan,
+      };
+    });
+
+    res.json({
+      message: keputusan === 'setuju'
+        ? 'Permohonan override kuota TOEFL berhasil disetujui'
+        : 'Permohonan override kuota TOEFL berhasil ditolak',
+      data: hasil,
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || error.status || 500;
+    if (statusCode === 500) {
+      console.error('[putusanOverrideToefl] Internal Error:', error);
+    }
+    res.status(statusCode).json({
+      message: statusCode !== 500 ? error.message : 'Gagal memproses keputusan override kuota TOEFL',
+    });
   }
 };
