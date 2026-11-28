@@ -95,6 +95,7 @@ function App() {
             <Route path="mahasiswa/tagihan" element={<RoleRoute dashboard="mahasiswa"><TagihanSayaPage /></RoleRoute>} />
             <Route path="mahasiswa/presensi-ews" element={<RoleRoute dashboard="mahasiswa"><MahasiswaPresensiEwsPage /></RoleRoute>} />
             <Route path="mahasiswa/terjemahan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaTerjemahanPage /></RoleRoute>} />
+            <Route path="mahasiswa/terjemahan/ajukan" element={<RoleRoute dashboard="mahasiswa"><TerjemahanPage /></RoleRoute>} />
             <Route path="mahasiswa/toefl/tagihan" element={<Navigate to="/dashboard/mahasiswa/tagihan?layanan=toefl" replace />} />
             <Route path="mahasiswa/toefl" element={<RoleRoute dashboard="mahasiswa"><ToeflDaftarPage /></RoleRoute>} />
             <Route path="mahasiswa/absensi-toefl" element={<RoleRoute dashboard="mahasiswa"><MahasiswaAbsensiToeflPage /></RoleRoute>} />
