@@ -83,7 +83,7 @@ function App() {
             <Route path="dosen/kuesioner" element={<RoleRoute dashboard="dosen"><KuesionerDosenPage /></RoleRoute>} />
             <Route path="dosen/kuesioner/:idKelas" element={<RoleRoute dashboard="dosen"><KuesionerDosenPage /></RoleRoute>} />
             <Route path="penerjemah" element={<RoleRoute dashboard="penerjemah"><JobOrderTerjemahanPage /></RoleRoute>} />
-            <Route path="dosen/penerjemahan" element={<Navigate to="/dashboard/penerjemah" replace />} />
+            <Route path="dosen/penerjemahan" element={<RoleRoute dashboard="dosen"><JobOrderTerjemahanPage /></RoleRoute>} />
             <Route path="dosen/kelas/:idKelas/presensi/:idPertemuan" element={<RoleRoute dashboard="dosen"><PresensiPertemuanPage /></RoleRoute>} />
             <Route path="dosen/kelas/:idKelas" element={<RoleRoute dashboard="dosen"><RuangKelasPage /></RoleRoute>} />
             <Route path="dosen/kelas/:idKelas/materi" element={<RoleRoute dashboard="dosen"><RuangKelasPage tabAwal="materi" /></RoleRoute>} />

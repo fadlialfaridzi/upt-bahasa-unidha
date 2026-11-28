@@ -37,12 +37,12 @@ router.post('/my-orders/:id/revisi', authenticate, authorizeRole('peserta'), aju
 router.get('/admin/orders', authenticate, authorizeAdmin, getHasilTerjemahanUntukAdmin);
 router.get('/admin/orders/:id/hasil', authenticate, authorizeAdmin, unduhHasilTerjemahanUntukAdmin);
 
-// Job order hanya dapat dilihat dan dikelola penerjemah yang ditugaskan.
-router.get('/job-orders', authenticate, authorizeRole('penerjemah'), getJobOrderSaya);
-router.get('/job-orders/:id/dokumen-asli', authenticate, authorizeRole('penerjemah'), getDokumenAsliJobOrder);
+// Job order dapat dilihat dan dikelola dosen (pengajar) maupun akun penerjemah yang ditugaskan.
+router.get('/job-orders', authenticate, authorizeRole('pengajar', 'penerjemah'), getJobOrderSaya);
+router.get('/job-orders/:id/dokumen-asli', authenticate, authorizeRole('pengajar', 'penerjemah'), getDokumenAsliJobOrder);
 router.get('/job-orders/:id/hasil', authenticate, authorizeRole('penerjemah'), getHasilJobOrder);
 router.post('/job-orders/:id/hasil', authenticate, authorizeRole('penerjemah'), uploadHasilTerjemahan, uploadHasilJobOrder);
-router.patch('/job-orders/:id/status', authenticate, authorizeRole('penerjemah'), ubahStatusJobOrder);
+router.patch('/job-orders/:id/status', authenticate, authorizeRole('pengajar', 'penerjemah'), ubahStatusJobOrder);
 
 router.get('/:id', authenticate, getTerjemahanById);
 
