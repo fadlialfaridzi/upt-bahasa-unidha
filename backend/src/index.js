@@ -17,6 +17,7 @@ import presensiRoutes from './routes/presensi.routes.js';
 import materiRoutes from './routes/materi.routes.js';
 import ruangKelasRoutes from './routes/ruang-kelas.routes.js';
 import tagihanRoutes from './routes/tagihan.routes.js';
+import sertifikatRoutes from './routes/sertifikat.routes.js';
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use('/api/presensi', presensiRoutes);
 app.use('/api/materi', materiRoutes);
 app.use('/api/ruang-kelas', ruangKelasRoutes);
 app.use('/api/tagihan', tagihanRoutes);
+app.use('/api/sertifikat', sertifikatRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -14,6 +14,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import ToeflJadwalPage from './pages/toefl/ToeflJadwalPage.jsx';
 import PelatihanPage from './pages/pelatihan/PelatihanPage.jsx';
 import TerjemahanPage from './pages/terjemahan/TerjemahanPage.jsx';
+import ValidasiSertifikatPage from './pages/sertifikat/ValidasiSertifikatPage.jsx';
 import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard.jsx';
 import SuperAdminUsersPage from './pages/dashboard/SuperAdminUsersPage.jsx';
 import SuperAdminOverrideToeflPage from './pages/dashboard/SuperAdminOverrideToeflPage.jsx';
@@ -97,6 +98,8 @@ function App() {
           <Route path="register" element={<RegisterPage />} />
           <Route path="toefl" element={<ToeflJadwalPage />} />
           <Route path="pelatihan" element={<PelatihanPage />} />
+          <Route path="validasi-sertifikat" element={<ValidasiSertifikatPage />} />
+          <Route path="validasi-sertifikat/:kode" element={<ValidasiSertifikatPage />} />
           <Route element={<PrivateRoute />}>
             <Route path="toefl/daftar/:jadwalId" element={<ToeflDaftarPage />} />
             <Route path="terjemahan" element={<TerjemahanPage />} />
