@@ -48,6 +48,7 @@ export const DASHBOARDS = {
       { label: 'Kelas saya', icon: 'graduation', path: '/dashboard/dosen/kelas' },
       { label: 'Jadwal kegiatan', icon: 'calendar', path: '/dashboard/dosen/jadwal' },
       { label: 'Kuesioner evaluasi', icon: 'award', path: '/dashboard/dosen/kuesioner' },
+      { label: 'Penerjemahan', icon: 'languages', path: '/dashboard/dosen/penerjemahan' },
     ],
   },
   penerjemah: {

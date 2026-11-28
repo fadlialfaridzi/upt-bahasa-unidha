@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../../services/api.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
+import { ROLE_LABELS } from '../../../config/roles.js';
 import Icon from '../../../components/ui/Icon.jsx';
 import { EmptyState, PageHeader, StatGrid } from '../../../components/dashboard/Widgets.jsx';
 
@@ -47,6 +49,8 @@ const tenggatLabel = (value) => {
 };
 
 function JobOrderTerjemahanPage() {
+  const { user } = useAuth();
+  const roleLabel = ROLE_LABELS[user?.role] || 'Dosen';
   const [jobs, setJobs] = useState(null);
   const [ringkasan, setRingkasan] = useState({ baru: 0, dikerjakan: 0, revisi: 0, selesai: 0 });
   const [selectedId, setSelectedId] = useState(null);
@@ -244,10 +248,10 @@ function JobOrderTerjemahanPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Penerjemahan / Penerjemah"
+        eyebrow={`Penerjemahan / ${roleLabel}`}
         title="Kelola job order penerjemahan"
         subtitle="Pantau penugasan, tenggat, dan progres pekerjaan terjemahan yang dialokasikan kepada Anda."
-        action={<span className="badge badge-muted">Penerjemah</span>}
+        action={<span className="badge badge-muted">{roleLabel}</span>}
       />
 
       <StatGrid items={statistik} />
@@ -316,7 +320,7 @@ function JobOrderTerjemahanPage() {
                 : 'Belum ada job order aktif'}
             text={query || statusFilter !== 'semua'
               ? 'Coba ubah kata kunci atau filter status.'
-              : 'Job order akan tampil di sini setelah dialokasikan kepada akun Penerjemah ini oleh Staf UPT.'}
+              : `Job order akan tampil di sini setelah dialokasikan kepada akun ${roleLabel} ini oleh Staf UPT.`}
           />
         ) : (
           <div className="table-wrap">
