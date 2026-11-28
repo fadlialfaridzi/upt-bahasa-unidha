@@ -45,6 +45,11 @@ function KelasTile({ k }) {
             <Icon name="alert" size={15} /> {belumDicatat} pertemuan belum dicatat presensinya
           </Link>
         )}
+        {k.nilai_belum > 0 && (
+          <Link to={`${ruang}?tab=nilai`} className="kelas-tile-peringatan">
+            <Icon name="clipboard" size={15} /> {k.nilai_belum} peserta belum diinput nilai akhirnya
+          </Link>
+        )}
       </div>
 
       <footer className="kelas-tile-aksi">
@@ -53,6 +58,12 @@ function KelasTile({ k }) {
             <Icon name="qr" size={15} /> {hariIni.status_presensi === 'dibuka' ? 'Lihat QR presensi' : 'Presensi hari ini'}
           </Link>
         )}
+        <Link to={`/dashboard/dosen/kuesioner/${k.id_kelas}`} className="btn btn-outline btn-sm">
+          <Icon name="award" size={15} /> Kuesioner
+        </Link>
+        <Link to={`${ruang}?tab=nilai`} className="btn btn-outline btn-sm">
+          <Icon name="clipboard" size={15} /> Input nilai
+        </Link>
         <Link to={ruang} className={`btn btn-sm ${hariIni ? 'btn-outline' : 'btn-primary'}`}>
           Buka kelas <Icon name="arrowRight" size={15} />
         </Link>

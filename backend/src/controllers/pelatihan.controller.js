@@ -343,6 +343,8 @@ export const getMyPelatihan = async (req, res) => {
         id_pendaftaran: item.id_pendaftaran,
         status_pendaftaran: item.status,
         tanggal_daftar: item.tanggal_daftar,
+        nilai_pretest: item.nilai_pretest !== null ? Number(item.nilai_pretest) : null,
+        nilai_akhir: item.nilai_akhir !== null ? Number(item.nilai_akhir) : null,
         kelas: {
           id_kelas: item.kelas_pelatihan.id_kelas,
           nama_kelas: item.kelas_pelatihan.nama_kelas,
@@ -578,6 +580,8 @@ export const getMyKelasMateri = async (req, res) => {
         id_pendaftaran: p.id_pendaftaran,
         tanggal_daftar: p.tanggal_daftar,
         status: p.status,
+        nilai_pretest: p.nilai_pretest !== null ? Number(p.nilai_pretest) : null,
+        nilai_akhir: p.nilai_akhir !== null ? Number(p.nilai_akhir) : null,
         kelas: {
           id_kelas: k.id_kelas,
           nama_kelas: k.nama_kelas,

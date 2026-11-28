@@ -125,6 +125,7 @@ function DosenDashboard() {
           <div className="hero-band-actions">
             <Link to="/dashboard/dosen/kelas" className="btn btn-light btn-sm"><Icon name="graduation" size={16} /> Kelas saya</Link>
             <Link to="/dashboard/dosen/jadwal" className="btn btn-ghost-light btn-sm"><Icon name="calendar" size={16} /> Jadwal kegiatan</Link>
+            <Link to="/dashboard/dosen/kuesioner" className="btn btn-ghost-light btn-sm"><Icon name="award" size={16} /> Kuesioner evaluasi</Link>
           </div>
         </div>
         <div className="hero-mini-grid">
@@ -271,7 +272,7 @@ function DosenDashboard() {
                 <li key={`n${n.id_kelas}`}>
                   <span className="todo-icon"><Icon name="clipboard" size={15} /></span>
                   <div>
-                    <strong>{n.belum} nilai belum diinput</strong>
+                    <strong><Link to={`/dashboard/dosen/kelas/${n.id_kelas}?tab=nilai`}>{n.belum} nilai belum diinput</Link></strong>
                     <span>{n.nama_kelas}</span>
                   </div>
                 </li>

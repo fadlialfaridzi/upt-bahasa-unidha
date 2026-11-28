@@ -4345,6 +4345,229 @@ input {
   }
 }
 
+/* ---------- Slip tagihan TOEFL peserta (#58) ---------- */
+.toefl-billing-list {
+  display: grid;
+  gap: 16px;
+}
+
+.toefl-billing-card {
+  overflow: hidden;
+}
+
+.billing-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+  gap: 20px;
+}
+
+.billing-details {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.billing-details div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.billing-details dt {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.billing-details dd {
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.billing-payment {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f8fbfa;
+}
+
+.billing-total {
+  color: var(--brand-900);
+  font-size: 1.55rem;
+}
+
+.billing-bank {
+  display: grid;
+  gap: 3px;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.billing-bank span,
+.billing-bank small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.billing-bank strong {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.billing-deadline {
+  color: var(--yellow-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.billing-proof-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.billing-proof-summary > div {
+  display: grid;
+  gap: 3px;
+}
+
+.billing-proof-note {
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+
+.billing-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.toefl-billing-slip-print {
+  display: none;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@media (max-width: 900px) {
+  .billing-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .billing-details div,
+  .billing-proof-summary,
+  .billing-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .billing-details div {
+    grid-template-columns: 115px minmax(0, 1fr);
+  }
+  .billing-actions,
+  .billing-proof-summary {
+    display: grid;
+  }
+  .billing-actions .btn {
+    width: 100%;
+  }
+}
+
+@media print {
+  body.printing-toefl-slip .toefl-billing-list,
+  body.printing-toefl-slip .sidebar,
+  body.printing-toefl-slip .topbar,
+  body.printing-toefl-slip .page-head {
+    display: none !important;
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print {
+    display: block;
+    min-height: 245mm;
+    padding: 14mm 12mm;
+    border: 1.5px solid #4b6f69;
+    border-radius: 3mm;
+    background: #fff;
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print header {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--brand-700);
+  }
+
+  .slip-logo {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 9px;
+    background: var(--brand-700);
+    color: #fff;
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print header div:nth-child(2) {
+    display: grid;
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print dl {
+    display: grid;
+    gap: 7px;
+    margin: 12mm 0 8mm;
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print dl div {
+    display: grid;
+    grid-template-columns: 155px minmax(0, 1fr);
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print dl dt {
+    color: var(--muted);
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print dl dd {
+    text-align: right;
+    font-weight: 700;
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print section {
+    display: grid;
+    gap: 5px;
+    padding: 10px 12px;
+    background: var(--brand-50);
+  }
+
+  body.printing-toefl-slip .toefl-billing-slip-print footer {
+    position: absolute;
+    left: 22mm;
+    right: 22mm;
+    bottom: 22mm;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+}
+
 /* Job order penerjemahan (Dosen) */
 .job-order-list-panel {
   margin-bottom: 20px;
@@ -4998,6 +5221,7 @@ input {
 }
 .presensi-ringkas-item.is-hadir { border-left-color: var(--success); }
 .presensi-ringkas-item.is-izin { border-left-color: #c99a06; }
+.presensi-ringkas-item.is-naik { border-left-color: var(--brand-700); }
 .presensi-ringkas-item.is-alpha { border-left-color: var(--danger); }
 .presensi-ringkas-item.is-belum { border-left-color: var(--line); border-left-style: dashed; }
 .presensi-table tr.is-berubah td {
@@ -6074,4 +6298,423 @@ input {
   min-width: 160px;
   font-size: 0.76rem;
   color: var(--muted);
+}
+
+/* ---------- Input Nilai Evaluasi Peserta (Dosen) ---------- */
+.nilai-kelas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.nilai-kelas-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.nilai-kelas-card:hover {
+  border-color: var(--brand-300);
+  box-shadow: var(--shadow-sm);
+}
+.nilai-kelas-card.is-aktif {
+  border-color: var(--brand-700);
+  background: var(--brand-50);
+  box-shadow: 0 0 0 1px var(--brand-700);
+}
+.nilai-kelas-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.nilai-kelas-card-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.nilai-kelas-card strong {
+  font-size: 0.96rem;
+  color: var(--brand-900);
+  line-height: 1.3;
+}
+.nilai-kelas-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.nilai-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.nilai-stat-box {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: #fafcfb;
+  display: grid;
+  gap: 2px;
+}
+.nilai-stat-box span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.nilai-stat-box strong {
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--brand-900);
+  font-variant-numeric: tabular-nums;
+}
+.nilai-stat-box small {
+  font-size: 0.74rem;
+  color: var(--ink-2);
+}
+
+.nilai-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.nilai-toolbar .tabs {
+  margin-bottom: 0;
+}
+.nilai-toolbar-kanan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
+}
+.nilai-search {
+  min-width: 220px;
+  max-width: 300px;
+  flex: 1;
+}
+
+.nilai-input-cell {
+  display: grid;
+  gap: 3px;
+  max-width: 128px;
+}
+.nilai-input {
+  height: 36px;
+  padding: 0 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.nilai-input.is-invalid {
+  border-color: var(--danger);
+  background: var(--danger-50);
+}
+.nilai-input-hint {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+.nilai-input-hint.is-ok { color: var(--success); }
+.nilai-input-hint.is-low { color: var(--accent-600); }
+.nilai-input-hint.is-err { color: var(--danger); font-weight: 600; }
+
+.nilai-kehadiran-cell {
+  display: grid;
+  gap: 5px;
+  min-width: 145px;
+  max-width: 185px;
+}
+.nilai-kehadiran-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.nilai-kehadiran-rincian {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.nilai-selisih {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.nilai-selisih.is-naik { color: var(--success); }
+.nilai-selisih.is-turun { color: var(--danger); }
+.nilai-selisih.is-tetap { color: var(--muted); }
+
+.status-select.is-lulus { border-left-color: var(--success); }
+.status-select.is-tidak_lulus { border-left-color: var(--danger); }
+.status-select.is-belum_dinilai { border-left-style: dashed; }
+
+.nilai-status-cell {
+  display: grid;
+  gap: 3px;
+}
+.nilai-override-tag {
+  font-size: 0.7rem;
+  color: var(--accent-600);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.nilai-override-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--brand-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.orang-nilai {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .nilai-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .nilai-toolbar-kanan {
+    justify-content: stretch;
+  }
+  .nilai-search {
+    max-width: none;
+  }
+}
+@media (max-width: 600px) {
+  .nilai-stat-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Kuesioner Evaluasi Pengajar (Dosen & Ruang Kelas) ---------- */
+.kuesioner-bintang {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.kuesioner-bintang .is-isi {
+  color: #e6a800;
+}
+.kuesioner-bintang .is-kosong {
+  color: var(--line);
+}
+.kuesioner-skor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--success-50);
+  color: var(--success);
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+.kuesioner-instrumen-list {
+  list-style: none;
+  display: grid;
+  gap: 14px;
+}
+.kuesioner-instrumen-item {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fafcfb;
+}
+.kuesioner-instrumen-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.kuesioner-instrumen-judul {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 220px;
+}
+.kuesioner-instrumen-judul strong {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.kuesioner-instrumen-angka {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.kuesioner-instrumen-angka > strong {
+  font-size: 1.2rem;
+  color: var(--brand-900);
+}
+.kuesioner-skala-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.kuesioner-skala-chip {
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 0.73rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.kuesioner-skala-chip.is-ada {
+  border-color: var(--brand-200);
+  background: var(--brand-50);
+  color: var(--brand-900);
+}
+
+.kuesioner-distribusi-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+.kuesioner-distribusi-row {
+  display: grid;
+  gap: 5px;
+}
+.kuesioner-distribusi-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.kuesioner-komentar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.kuesioner-komentar-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fafcfb;
+}
+.kuesioner-komentar-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kuesioner-komentar-head strong {
+  display: block;
+  font-size: 0.88rem;
+}
+.kuesioner-komentar-head span:not(.avatar):not(.badge) {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.kuesioner-komentar-isi {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+/* Form Pengisian Kuesioner oleh Peserta di Ruang Kelas */
+.kuesioner-form-pertanyaan {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.kuesioner-form-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fafcfb;
+}
+.kuesioner-likert-group {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.kuesioner-likert-btn {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--ink-2);
+  font: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.kuesioner-likert-btn:hover:not(:disabled) {
+  border-color: var(--brand-300);
+  background: var(--brand-50);
+}
+.kuesioner-likert-btn.is-selected {
+  border-color: var(--brand-700);
+  background: var(--brand-700);
+  color: #fff;
+}
+.kuesioner-likert-btn strong {
+  font-size: 1rem;
+}
+.kuesioner-likert-btn small {
+  font-size: 0.68rem;
+  text-align: center;
+  line-height: 1.2;
+}
+.kuesioner-likert-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+@media (max-width: 600px) {
+  .kuesioner-likert-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kuesioner-likert-btn {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+  }
 }

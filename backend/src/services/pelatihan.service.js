@@ -3,12 +3,14 @@ import { fmtJam, fmtTanggal, namaHari, statusWaktu } from '../utils/waktu.js';
 
 const AMBANG_EWS_DEFAULT = 75;
 
-/** Ambang kehadiran EWS (%) dari parameter_sistem, default 75. */
-export async function ambangEws(db) {
-  const p = await db.parameter_sistem.findUnique({ where: { kunci: 'ambang_ews_persen' } });
+const bacaParamAngka = async (db, kunci, fallback) => {
+  const p = await db.parameter_sistem.findUnique({ where: { kunci } });
   const n = Number(p?.nilai);
-  return Number.isFinite(n) && n > 0 ? n : AMBANG_EWS_DEFAULT;
-}
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+};
+
+/** Ambang kehadiran EWS (%) dari parameter_sistem, default 75. */
+export const ambangEws = (db) => bacaParamAngka(db, 'ambang_ews_persen', AMBANG_EWS_DEFAULT);
 
 /** Bentuk respons satu pertemuan untuk dashboard. */
 export const pertemuanRingkas = (p, now) => ({
