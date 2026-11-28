@@ -24,9 +24,9 @@ export function resolveNotificationTarget(item, role) {
 
   // Notifikasi penerjemahan
   if (jenis.startsWith('terjemahan_')) {
-    return role === 'penerjemah'
-      ? '/dashboard/penerjemah'
-      : '/dashboard/mahasiswa/terjemahan';
+    if (role === 'pengajar') return '/dashboard/dosen/penerjemahan';
+    if (role === 'penerjemah') return '/dashboard/penerjemah';
+    return '/dashboard/mahasiswa/terjemahan';
   }
 
   // Notifikasi pembayaran TOEFL

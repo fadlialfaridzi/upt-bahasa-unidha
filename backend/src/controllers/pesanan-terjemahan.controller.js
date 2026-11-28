@@ -214,7 +214,7 @@ export const ajukanRevisiTerjemahan = async (req, res) => {
       };
     });
 
-    return res.json({ message: 'Pengajuan revisi berhasil dikirim kepada penerjemah', data });
+    return res.json({ message: 'Pengajuan revisi berhasil dikirim kepada dosen penerjemah', data });
   } catch (error) {
     if (error.status) {
       return res.status(error.status).json({ message: error.message });
