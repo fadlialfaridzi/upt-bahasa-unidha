@@ -264,6 +264,16 @@ function ToeflSesiPage() {
                               <Icon name="qr" size={17} />
                             </Link>
                           )}
+                          {(item.status === 'dijadwalkan' || item.status === 'selesai') && (
+                            <Link
+                              to={`/dashboard/admin/toefl/sesi/${item.id_sesi}/nilai`}
+                              className="icon-action"
+                              aria-label={`Kelola Nilai TOEFL ${item.nama_sesi}`}
+                              title="Kelola Nilai TOEFL"
+                            >
+                              <Icon name="clipboard" size={17} />
+                            </Link>
+                          )}
                           <Link
                             to={`/dashboard/admin/toefl/sesi/${item.id_sesi}/edit`}
                             className="icon-action"
