@@ -72,10 +72,14 @@ function DashboardLayout() {
 
   const config = DASHBOARDS[dashboardKeyFor(user.role)];
 
+  const isMenuActive = (item) => {
+    if (!item.path) return false;
+    if (item.exact || item.path === config.path) return location.pathname === item.path;
+    return location.pathname.startsWith(item.path);
+  };
+
   // Cari menu aktif berdasarkan path saat ini
-  const currentMenuItem = config.menu.find((item) =>
-    item.path && (item.path === config.path ? location.pathname === item.path : location.pathname.startsWith(item.path))
-  );
+  const currentMenuItem = config.menu.find(isMenuActive);
 
   const handleLogout = () => {
     logout();
@@ -125,9 +129,7 @@ function DashboardLayout() {
         <nav className="side-nav">
           {config.menu.map((item) => {
             if (item.path) {
-              const active = item.path === config.path
-                ? location.pathname === item.path
-                : location.pathname.startsWith(item.path);
+              const active = isMenuActive(item);
 
               return (
                 <Link

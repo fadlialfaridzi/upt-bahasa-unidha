@@ -161,7 +161,7 @@ function MahasiswaTerjemahanPage() {
         title="Pesanan penerjemahan saya"
         subtitle="Pantau status pesanan dan sampaikan bagian yang perlu diperbaiki setelah hasil terjemahan tersedia."
         action={(
-          <Link to="/terjemahan" className="btn btn-primary">
+          <Link to="/dashboard/mahasiswa/terjemahan/ajukan" className="btn btn-primary">
             <Icon name="plus" size={16} /> Ajukan penerjemahan
           </Link>
         )}
