@@ -87,6 +87,7 @@ export const getRingkasanDosen = async (req, res) => {
       pertemuan_selesai: k.pertemuan.filter((p) => p.status === 'selesai').length,
       berikutnya: k.pertemuan.find((p) => p.status !== 'selesai') ?? null,
       kehadiran: persen(_hadir, _slot),
+      nilai_belum: pesertaAktif.filter((d) => d.id_kelas === k.id_kelas && d.nilai_akhir === null).length,
     }));
 
     const semua = kelas.flatMap((k) => k.pertemuan);

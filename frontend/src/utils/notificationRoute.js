@@ -49,6 +49,10 @@ export function resolveNotificationIcon(item) {
   const jenis = typeof item?.jenis === 'string' ? item.jenis : '';
   if (jenis === 'override_toefl') return 'shield';
   if (jenis.startsWith('terjemahan_')) return 'languages';
-  if (jenis.startsWith('kelas:')) return jenis.endsWith(':materi') ? 'book' : 'megaphone';
+  if (jenis.startsWith('kelas:')) {
+    if (jenis.endsWith(':materi')) return 'book';
+    if (jenis.endsWith(':nilai')) return 'clipboard';
+    return 'megaphone';
+  }
   return 'wallet';
 }

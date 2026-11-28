@@ -9,8 +9,10 @@ import Modal from '../../../components/ui/Modal.jsx';
 import { EmptyState } from '../../../components/dashboard/Widgets.jsx';
 import { Meter } from '../../../components/dashboard/Pelatihan.jsx';
 import { BerkasMateri, FormUnggahMateri } from '../../../components/kelas/MateriKelas.jsx';
+import KuesionerKelas from '../../../components/kelas/KuesionerKelas.jsx';
+import NilaiKelas from '../../../components/kelas/NilaiKelas.jsx';
 import {
-  JENIS_PELATIHAN, STATUS_KELAS, STATUS_KEHADIRAN, STATUS_WAKTU, TIPE_KELAS, formatTanggal,
+  JENIS_PELATIHAN, STATUS_KELAS, STATUS_KEHADIRAN, STATUS_WAKTU, TIPE_KELAS, formatTanggal, statusEvaluasi,
 } from '../../../config/pelatihan.js';
 
 const MAKS_ISI = 2000;
@@ -311,6 +313,8 @@ function RuangKelasPage({ tabAwal = 'forum' }) {
     { id: 'forum', label: 'Forum', icon: 'megaphone', count: jumlahBaru || null },
     { id: 'materi', label: 'Materi', icon: 'book', count: data.ringkasan.materi },
     { id: 'presensi', label: 'Presensi', icon: 'qr' },
+    ...(kelola ? [{ id: 'nilai', label: 'Nilai', icon: 'clipboard' }] : []),
+    { id: 'kuesioner', label: 'Kuesioner', icon: 'award' },
     ...(data.peserta ? [{ id: 'peserta', label: 'Peserta', icon: 'users', count: data.ringkasan.peserta }] : []),
   ];
 
@@ -368,6 +372,38 @@ function RuangKelasPage({ tabAwal = 'forum' }) {
                 <strong className="forum-angka">{data.kehadiran_saya.persen === null ? '—' : `${data.kehadiran_saya.persen}%`}</strong>
                 <Meter value={data.kehadiran_saya.hadir} max={data.kehadiran_saya.sesi || 1} label="Kehadiran saya" />
                 <span>{data.kehadiran_saya.hadir} hadir dari {data.kehadiran_saya.sesi} sesi presensi</span>
+              </section>
+            )}
+            {data.nilai_saya && (
+              <section className="panel forum-card">
+                <p className="forum-card-label">Hasil evaluasi pelatihan</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <strong className="forum-angka">
+                    {data.nilai_saya.nilai_akhir === null ? '—' : String(data.nilai_saya.nilai_akhir).replace('.', ',')}
+                  </strong>
+                  <span className={`badge ${statusEvaluasi(data.nilai_saya.nilai_pretest, data.nilai_saya.nilai_akhir).badge}`}>
+                    {statusEvaluasi(data.nilai_saya.nilai_pretest, data.nilai_saya.nilai_akhir).label}
+                  </span>
+                </div>
+                <dl className="forum-ringkas">
+                  <div>
+                    <dt>Nilai pre-test</dt>
+                    <dd>{data.nilai_saya.nilai_pretest === null ? '—' : String(data.nilai_saya.nilai_pretest).replace('.', ',')}</dd>
+                  </div>
+                  <div>
+                    <dt>Nilai akhir</dt>
+                    <dd>{data.nilai_saya.nilai_akhir === null ? '—' : String(data.nilai_saya.nilai_akhir).replace('.', ',')}</dd>
+                  </div>
+                  {data.nilai_saya.nilai_pretest !== null && data.nilai_saya.nilai_akhir !== null && (
+                    <div>
+                      <dt>Perkembangan (Δ)</dt>
+                      <dd>
+                        {data.nilai_saya.nilai_akhir - data.nilai_saya.nilai_pretest > 0 ? '+' : ''}
+                        {String(Math.round((data.nilai_saya.nilai_akhir - data.nilai_saya.nilai_pretest) * 100) / 100).replace('.', ',')}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
               </section>
             )}
             <section className="panel forum-card">
@@ -443,6 +479,10 @@ function RuangKelasPage({ tabAwal = 'forum' }) {
 
       {tab === 'presensi' && <TabPresensi data={data} idKelas={kelas.id_kelas} />}
 
+      {tab === 'nilai' && kelola && <NilaiKelas idKelas={kelas.id_kelas} onTersimpan={load} />}
+
+      {tab === 'kuesioner' && <KuesionerKelas idKelas={kelas.id_kelas} isDosen={kelola} />}
+
       {tab === 'peserta' && data.peserta && (
         <div className="peserta-layout">
           <section className="panel">
@@ -455,16 +495,40 @@ function RuangKelasPage({ tabAwal = 'forum' }) {
           </section>
           <section className="panel">
             <header className="panel-head">
-              <h2 className="panel-title">Peserta</h2>
-              <span className="panel-sub">{data.peserta.length} terverifikasi</span>
+              <div>
+                <h2 className="panel-title">Peserta</h2>
+                <span className="panel-sub">{data.peserta.length} terverifikasi</span>
+              </div>
+              {kelola && data.peserta.length > 0 && (
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => pilihTab('nilai')}>
+                  <Icon name="clipboard" size={15} /> Input nilai peserta
+                </button>
+              )}
             </header>
             {data.peserta.length === 0 ? (
               <EmptyState icon="users" title="Belum ada peserta" text="Peserta muncul setelah pembayarannya diverifikasi admin." />
             ) : (
               <ul className="orang-list">
-                {data.peserta.map((p) => (
-                  <li key={p.id_pendaftaran}><span className="avatar">{inisial(p.nama_lengkap)}</span><strong>{p.nama_lengkap}</strong><span>{p.nim || ''}</span></li>
-                ))}
+                {data.peserta.map((p) => {
+                  const st = statusEvaluasi(p.nilai_pretest, p.nilai_akhir);
+                  return (
+                    <li key={p.id_pendaftaran}>
+                      <span className="avatar">{inisial(p.nama_lengkap)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <strong style={{ display: 'block' }}>{p.nama_lengkap}</strong>
+                        <span>{[p.nim, p.program_studi].filter(Boolean).join(' · ') || 'Peserta umum'}</span>
+                      </div>
+                      <div className="orang-nilai">
+                        {(p.nilai_pretest !== null || p.nilai_akhir !== null) && (
+                          <span title="Nilai Pre-test → Nilai Akhir">
+                            Pre: <strong>{p.nilai_pretest ?? '—'}</strong> · Akhir: <strong>{p.nilai_akhir ?? '—'}</strong>
+                          </span>
+                        )}
+                        <span className={`badge ${st.badge}`}>{st.label}</span>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>
