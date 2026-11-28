@@ -222,7 +222,7 @@ export const uploadHasilJobOrder = async (req, res) => {
           id_pengguna: job.pesanan_terjemahan.id_pemohon,
           jenis: 'terjemahan_hasil',
           judul: unggahRevisi ? 'Hasil revisi tersedia' : 'Hasil terjemahan tersedia',
-          pesan: `Penerjemah telah mengunggah hasil versi ${versiBerikutnya} untuk pesanan #${job.id_pesanan}. Buka Penerjemahan Saya untuk mengunduhnya.`,
+          pesan: `Dosen penerjemah telah mengunggah hasil versi ${versiBerikutnya} untuk pesanan #${job.id_pesanan}. Buka Penerjemahan Saya untuk mengunduhnya.`,
         },
       });
       await catatAudit(tx, req, {
