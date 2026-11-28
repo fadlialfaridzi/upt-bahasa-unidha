@@ -294,6 +294,12 @@ model pendaftaran_toefl {
   id_sertifikat    Int?               @unique
   tanggal_daftar   DateTime           @default(now())
   status           status_pendaftaran @default(menunggu_pembayaran)
+  raw_listening    Int?               @db.SmallInt
+  raw_structure    Int?               @db.SmallInt
+  raw_reading      Int?               @db.SmallInt
+  nilai_listening  Decimal?           @db.Decimal(6, 2)
+  nilai_structure  Decimal?           @db.Decimal(6, 2)
+  nilai_reading    Decimal?           @db.Decimal(6, 2)
   skor_toefl       Decimal?           @db.Decimal(6, 2)
   status_kelulusan status_kelulusan   @default(belum_dinilai)
   status_kehadiran status_kehadiran?

@@ -12,6 +12,9 @@ import {
   getAbsensiSesiToefl, bukaAbsensiToefl, tutupAbsensiToefl,
   updateKehadiranManualToefl, getAbsensiToeflSaya, scanAbsensiToefl,
 } from '../controllers/toefl-absensi.controller.js';
+import {
+  listSesiNilaiToefl, getNilaiSesiToefl, simpanNilaiSesiToefl,
+} from '../controllers/toefl-nilai.controller.js';
 import { authenticate, authorizeAdmin, authorizeSuperAdmin } from '../middlewares/auth.middleware.js';
 import { authorizeRole } from '../middlewares/role.middleware.js';
 import { uploadBukti } from '../middlewares/upload.middleware.js';
@@ -54,5 +57,10 @@ router.post('/sesi/:id/absensi/buka', authenticate, authorizeAdmin, bukaAbsensiT
 router.post('/sesi/:id/absensi/tutup', authenticate, authorizeAdmin, tutupAbsensiToefl);
 router.patch('/sesi/:id/absensi/:idPendaftaran', authenticate, authorizeAdmin, updateKehadiranManualToefl);
 router.delete('/sesi/:id', authenticate, authorizeAdmin, deleteSesi);
+
+// Admin UPT, Dosen, & Super Admin - input dan pengelolaan nilai TOEFL (Issue #122)
+router.get('/nilai/sesi', authenticate, authorizeRole('staf_upt', 'pengajar', 'super_admin'), listSesiNilaiToefl);
+router.get('/sesi/:id/nilai', authenticate, authorizeRole('staf_upt', 'pengajar', 'super_admin'), getNilaiSesiToefl);
+router.put('/sesi/:id/nilai', authenticate, authorizeRole('staf_upt', 'pengajar', 'super_admin'), simpanNilaiSesiToefl);
 
 export default router;

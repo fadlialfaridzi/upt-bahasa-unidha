@@ -35,6 +35,8 @@ import JadwalKelasPage from './pages/dashboard/admin/JadwalKelasPage.jsx';
 import ToeflSesiPage from './pages/dashboard/admin/ToeflSesiPage.jsx';
 import ToeflSesiFormPage from './pages/dashboard/admin/ToeflSesiFormPage.jsx';
 import ToeflAbsensiQrPage from './pages/dashboard/admin/ToeflAbsensiQrPage.jsx';
+import ToeflNilaiListPage from './pages/dashboard/toefl/ToeflNilaiListPage.jsx';
+import ToeflNilaiSesiPage from './pages/dashboard/toefl/ToeflNilaiSesiPage.jsx';
 import VerifikasiPembayaranPage from './pages/dashboard/admin/VerifikasiPembayaranPage.jsx';
 import AdminHasilTerjemahanPage from './pages/dashboard/admin/AdminHasilTerjemahanPage.jsx';
 import ManajemenTerjemahanPage from './pages/dashboard/admin/ManajemenTerjemahanPage.jsx';
@@ -74,6 +76,8 @@ function App() {
             <Route path="admin/toefl/sesi/tambah" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/:id/edit" element={<RoleRoute dashboard="admin"><ToeflSesiFormPage /></RoleRoute>} />
             <Route path="admin/toefl/sesi/:id/absensi" element={<RoleRoute dashboard="admin"><ToeflAbsensiQrPage /></RoleRoute>} />
+            <Route path="admin/toefl/nilai" element={<RoleRoute dashboard="admin"><ToeflNilaiListPage /></RoleRoute>} />
+            <Route path="admin/toefl/sesi/:id/nilai" element={<RoleRoute dashboard="admin"><ToeflNilaiSesiPage /></RoleRoute>} />
             <Route path="admin/pembayaran" element={<RoleRoute dashboard="admin"><VerifikasiPembayaranPage /></RoleRoute>} />
             <Route path="admin/terjemahan/hasil" element={<RoleRoute dashboard="admin"><AdminHasilTerjemahanPage /></RoleRoute>} />
             <Route path="admin/terjemahan" element={<RoleRoute dashboard="admin"><ManajemenTerjemahanPage /></RoleRoute>} />
@@ -82,6 +86,8 @@ function App() {
             <Route path="dosen/kelas" element={<RoleRoute dashboard="dosen"><KelasSayaPage /></RoleRoute>} />
             <Route path="dosen/kuesioner" element={<RoleRoute dashboard="dosen"><KuesionerDosenPage /></RoleRoute>} />
             <Route path="dosen/kuesioner/:idKelas" element={<RoleRoute dashboard="dosen"><KuesionerDosenPage /></RoleRoute>} />
+            <Route path="dosen/toefl/nilai" element={<RoleRoute dashboard="dosen"><ToeflNilaiListPage /></RoleRoute>} />
+            <Route path="dosen/toefl/sesi/:id/nilai" element={<RoleRoute dashboard="dosen"><ToeflNilaiSesiPage /></RoleRoute>} />
             <Route path="penerjemah" element={<RoleRoute dashboard="penerjemah"><JobOrderTerjemahanPage /></RoleRoute>} />
             <Route path="dosen/penerjemahan" element={<RoleRoute dashboard="dosen"><JobOrderTerjemahanPage /></RoleRoute>} />
             <Route path="dosen/kelas/:idKelas/presensi/:idPertemuan" element={<RoleRoute dashboard="dosen"><PresensiPertemuanPage /></RoleRoute>} />
