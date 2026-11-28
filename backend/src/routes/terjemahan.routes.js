@@ -40,8 +40,8 @@ router.get('/admin/orders/:id/hasil', authenticate, authorizeAdmin, unduhHasilTe
 // Job order dapat dilihat dan dikelola dosen (pengajar) maupun akun penerjemah yang ditugaskan.
 router.get('/job-orders', authenticate, authorizeRole('pengajar', 'penerjemah'), getJobOrderSaya);
 router.get('/job-orders/:id/dokumen-asli', authenticate, authorizeRole('pengajar', 'penerjemah'), getDokumenAsliJobOrder);
-router.get('/job-orders/:id/hasil', authenticate, authorizeRole('penerjemah'), getHasilJobOrder);
-router.post('/job-orders/:id/hasil', authenticate, authorizeRole('penerjemah'), uploadHasilTerjemahan, uploadHasilJobOrder);
+router.get('/job-orders/:id/hasil', authenticate, authorizeRole('pengajar', 'penerjemah'), getHasilJobOrder);
+router.post('/job-orders/:id/hasil', authenticate, authorizeRole('pengajar', 'penerjemah'), uploadHasilTerjemahan, uploadHasilJobOrder);
 router.patch('/job-orders/:id/status', authenticate, authorizeRole('pengajar', 'penerjemah'), ubahStatusJobOrder);
 
 router.get('/:id', authenticate, getTerjemahanById);

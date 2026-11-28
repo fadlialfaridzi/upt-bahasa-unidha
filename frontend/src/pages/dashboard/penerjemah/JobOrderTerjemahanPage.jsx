@@ -476,13 +476,20 @@ function JobOrderTerjemahanPage() {
                 {aksiBerjalan ? 'Memproses...' : aksiWorkspace.label}
               </button>
             )}
-            {selectedJob.status_job === 'dikerjakan' && selectedJob.status_pesanan === 'dikerjakan' ? (
+            {(selectedJob.status_job === 'dikerjakan' && selectedJob.status_pesanan === 'dikerjakan')
+            || (selectedJob.status_job === 'selesai' && selectedJob.status_pesanan === 'revisi') ? (
               <form className="job-order-upload" onSubmit={unggahHasil}>
+                {selectedJob.catatan_revisi && (
+                  <div className="job-order-revision" role="note">
+                    <strong>Permintaan revisi peserta</strong>
+                    <p>{selectedJob.catatan_revisi}</p>
+                  </div>
+                )}
                 <div>
-                  <h3>{selectedJob.versi_hasil > 0 ? 'Unggah hasil revisi' : 'Unggah hasil terjemahan'}</h3>
+                  <h3>{selectedJob.versi_hasil > 0 ? 'Unggah ulang hasil revisi' : 'Unggah hasil terjemahan'}</h3>
                   <p>
                     {selectedJob.versi_hasil > 0
-                      ? 'Unggah dokumen revisi setelah catatan pemohon ditindaklanjuti.'
+                      ? 'Unggah dokumen revisi terbaru setelah catatan pemohon ditindaklanjuti.'
                       : 'Unggah dokumen final untuk menyelesaikan job order ini.'}
                   </p>
                 </div>
