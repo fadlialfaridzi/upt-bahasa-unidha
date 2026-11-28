@@ -10,7 +10,7 @@ import {
 } from '../controllers/toefl.controller.js';
 import {
   getAbsensiSesiToefl, bukaAbsensiToefl, tutupAbsensiToefl,
-  updateKehadiranManualToefl, scanAbsensiToefl,
+  updateKehadiranManualToefl, getAbsensiToeflSaya, scanAbsensiToefl,
 } from '../controllers/toefl-absensi.controller.js';
 import { authenticate, authorizeAdmin, authorizeSuperAdmin } from '../middlewares/auth.middleware.js';
 import { authorizeRole } from '../middlewares/role.middleware.js';
@@ -28,6 +28,7 @@ router.get('/my-pendaftaran', authenticate, getMyPendaftaran);
 router.get('/tagihan', authenticate, getTagihanToeflPeserta);
 router.post('/pembayaran/upload', authenticate, uploadBukti.single('bukti'), uploadBuktiToefl);
 router.get('/pendaftaran/:id/bukti', authenticate, getBuktiToefl);
+router.get('/absensi/saya', authenticate, getAbsensiToeflSaya);
 router.post('/absensi/scan', authenticate, scanAbsensiToefl);
 
 // Admin only

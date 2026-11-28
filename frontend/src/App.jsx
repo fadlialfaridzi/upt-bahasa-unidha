@@ -22,6 +22,7 @@ import DosenDashboard from './pages/dashboard/DosenDashboard.jsx';
 import MahasiswaDashboard from './pages/dashboard/MahasiswaDashboard.jsx';
 import MahasiswaPelatihanPage from './pages/dashboard/mahasiswa/MahasiswaPelatihanPage.jsx';
 import MahasiswaPresensiEwsPage from './pages/dashboard/mahasiswa/MahasiswaPresensiEwsPage.jsx';
+import MahasiswaAbsensiToeflPage from './pages/dashboard/mahasiswa/MahasiswaAbsensiToeflPage.jsx';
 import MahasiswaTerjemahanPage from './pages/dashboard/mahasiswa/MahasiswaTerjemahanPage.jsx';
 import TagihanSayaPage from './pages/dashboard/mahasiswa/TagihanSayaPage.jsx';
 import MahasiswaKelasSayaPage from './pages/dashboard/mahasiswa/MahasiswaKelasSayaPage.jsx';
@@ -86,6 +87,7 @@ function App() {
             <Route path="mahasiswa/terjemahan" element={<RoleRoute dashboard="mahasiswa"><MahasiswaTerjemahanPage /></RoleRoute>} />
             <Route path="mahasiswa/toefl/tagihan" element={<Navigate to="/dashboard/mahasiswa/tagihan?layanan=toefl" replace />} />
             <Route path="mahasiswa/toefl" element={<RoleRoute dashboard="mahasiswa"><ToeflDaftarPage /></RoleRoute>} />
+            <Route path="mahasiswa/absensi-toefl" element={<RoleRoute dashboard="mahasiswa"><MahasiswaAbsensiToeflPage /></RoleRoute>} />
           </Route>
         </Route>
 

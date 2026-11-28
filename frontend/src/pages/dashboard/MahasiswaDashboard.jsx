@@ -61,6 +61,14 @@ function MahasiswaDashboard() {
       badgeClass: 'badge-accent',
     },
     {
+      icon: 'qr',
+      title: 'Absensi TOEFL',
+      text: 'Pindai QR absensi ujian TOEFL & pantau status kehadiran sesi Anda',
+      path: '/dashboard/mahasiswa/absensi-toefl',
+      badge: 'Scan QR',
+      badgeClass: 'badge-success',
+    },
+    {
       icon: 'languages',
       title: 'Jasa Penerjemahan',
       text: 'Ajukan penerjemahan dokumen resmi & akademik',

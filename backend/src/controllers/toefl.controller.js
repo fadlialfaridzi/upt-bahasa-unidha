@@ -35,12 +35,16 @@ const kodeTagihanToefl = async (tx) => {
 
 const serializePendaftaran = (item) => {
   const pembayaran = item.tagihan?.pembayaran?.[0] ?? null;
+  // Jangan pernah kirim token_qr sesi kepada peserta melalui endpoint pendaftaran/tagihan
+  const sesi = item.sesi_toefl
+    ? (({ token_qr: _tokenQr, ...rest }) => rest)(item.sesi_toefl)
+    : null;
   return {
     id_pendaftaran: item.id_pendaftaran,
     status: item.status,
     tanggal_daftar: item.tanggal_daftar,
     pengguna: item.pengguna,
-    sesi: item.sesi_toefl,
+    sesi,
     tagihan: item.tagihan ? {
       id_tagihan: item.tagihan.id_tagihan,
       kode_tagihan: item.tagihan.kode_tagihan,

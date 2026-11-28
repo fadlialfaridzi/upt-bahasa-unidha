@@ -60,6 +60,7 @@ export const DASHBOARDS = {
     menu: [
       { label: 'Ringkasan', icon: 'grid', path: '/dashboard/mahasiswa' },
       { label: 'Tes TOEFL', icon: 'graduation', path: '/dashboard/mahasiswa/toefl' },
+      { label: 'Absensi TOEFL', icon: 'qr', path: '/dashboard/mahasiswa/absensi-toefl' },
       { label: 'Daftar pelatihan', icon: 'book', path: '/dashboard/mahasiswa/pelatihan' },
       { label: 'Kelas saya', icon: 'users', path: '/dashboard/mahasiswa/kelas' },
       { label: 'Presensi & EWS', icon: 'qr', path: '/dashboard/mahasiswa/presensi-ews' },
