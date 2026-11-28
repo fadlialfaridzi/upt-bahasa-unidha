@@ -180,14 +180,16 @@ export const uploadHasilJobOrder = async (req, res) => {
       if (!job || job.pesanan_terjemahan.status === 'dibatalkan') {
         throw Object.assign(new Error('Job order tidak ditemukan'), { status: 404 });
       }
-      if (job.status !== 'dikerjakan' || job.pesanan_terjemahan.status !== 'dikerjakan') {
+      const siapUnggah = (job.status === 'dikerjakan' && job.pesanan_terjemahan.status === 'dikerjakan')
+        || (job.status === 'selesai' && job.pesanan_terjemahan.status === 'revisi');
+      if (!siapUnggah) {
         throw Object.assign(new Error('Mulai pengerjaan job order sebelum mengunggah hasil'), { status: 409 });
       }
 
       const versiBerikutnya = job.versi_hasil + 1;
       const unggahRevisi = job.versi_hasil > 0;
       const updatedJob = await tx.job_order.updateMany({
-        where: { id_job: idJob, id_penerjemah: req.user.id, status: 'dikerjakan' },
+        where: { id_job: idJob, id_penerjemah: req.user.id, status: job.status },
         data: {
           status: 'selesai',
           file_hasil_path: req.file.path,
@@ -201,7 +203,7 @@ export const uploadHasilJobOrder = async (req, res) => {
       }
 
       const updatedPesanan = await tx.pesanan_terjemahan.updateMany({
-        where: { id_pesanan: job.id_pesanan, status: 'dikerjakan' },
+        where: { id_pesanan: job.id_pesanan, status: job.pesanan_terjemahan.status },
         data: { status: 'selesai' },
       });
       if (!updatedPesanan.count) {
