@@ -29,47 +29,61 @@ function jenisGalat(err) {
   return 'galat';
 }
 
-const PESAN = {
-  terblokir: {
-    judul: 'Permintaan izin kamera terhalang',
-    isi: 'Browser tidak bisa menampilkan permintaan izin karena ada aplikasi lain yang tampil di atas layar.',
-    langkah: [
-      'Tutup balon chat / jendela mengambang (Messenger, WhatsApp, dll.), hentikan perekam layar, dan matikan filter layar / mode malam.',
-      'Atau izinkan langsung: ketuk ikon gembok di samping alamat situs → Izin → Kamera → Izinkan.',
-      'Lalu tekan "Coba lagi".',
-    ],
-  },
-  ditolak: {
-    judul: 'Izin kamera ditolak',
-    isi: 'Situs ini tidak diberi izin memakai kamera.',
-    langkah: [
-      'Ketuk ikon gembok di samping alamat situs → Izin / Setelan situs → Kamera → Izinkan.',
-      'Lalu tekan "Coba lagi" (atau muat ulang halaman).',
-    ],
-  },
-  dipakai: {
-    judul: 'Kamera sedang dipakai',
-    isi: 'Kamera sedang digunakan aplikasi atau tab lain.',
-    langkah: ['Tutup aplikasi kamera / panggilan video / tab lain yang memakai kamera, lalu tekan "Coba lagi".'],
-  },
-  'tanpa-kamera': {
-    judul: 'Kamera tidak ditemukan',
-    isi: 'Perangkat ini tidak memiliki kamera yang bisa dipakai browser.',
-    langkah: ['Gunakan "Ambil foto QR" atau ketik token presensi secara manual.'],
-  },
-  https: {
-    judul: 'Kamera butuh alamat HTTPS',
-    isi: 'Browser hanya mengizinkan kamera pada situs HTTPS (atau localhost).',
-    langkah: ['Buka situs lewat alamat https://, atau gunakan "Ambil foto QR" / ketik token manual.'],
-  },
-  galat: {
-    judul: 'Kamera gagal dinyalakan',
-    isi: 'Terjadi kendala saat menyalakan kamera.',
-    langkah: ['Tekan "Coba lagi". Bila tetap gagal, gunakan "Ambil foto QR" atau ketik token manual.'],
-  },
-};
+function buatPesan(showManualHint) {
+  return {
+    terblokir: {
+      judul: 'Permintaan izin kamera terhalang',
+      isi: 'Browser tidak bisa menampilkan permintaan izin karena ada aplikasi lain yang tampil di atas layar.',
+      langkah: [
+        'Tutup balon chat / jendela mengambang (Messenger, WhatsApp, dll.), hentikan perekam layar, dan matikan filter layar / mode malam.',
+        'Atau izinkan langsung: ketuk ikon gembok di samping alamat situs → Izin → Kamera → Izinkan.',
+        'Lalu tekan "Coba lagi".',
+      ],
+    },
+    ditolak: {
+      judul: 'Izin kamera ditolak',
+      isi: 'Situs ini tidak diberi izin memakai kamera.',
+      langkah: [
+        'Ketuk ikon gembok di samping alamat situs → Izin / Setelan situs → Kamera → Izinkan.',
+        'Lalu tekan "Coba lagi" (atau muat ulang halaman).',
+      ],
+    },
+    dipakai: {
+      judul: 'Kamera sedang dipakai',
+      isi: 'Kamera sedang digunakan aplikasi atau tab lain.',
+      langkah: ['Tutup aplikasi kamera / panggilan video / tab lain yang memakai kamera, lalu tekan "Coba lagi".'],
+    },
+    'tanpa-kamera': {
+      judul: 'Kamera tidak ditemukan',
+      isi: 'Perangkat ini tidak memiliki kamera yang bisa dipakai browser.',
+      langkah: [
+        showManualHint
+          ? 'Gunakan "Ambil foto QR" atau ketik token presensi secara manual.'
+          : 'Gunakan tombol "Ambil foto QR" di bawah atau hubungi pengawas ujian.',
+      ],
+    },
+    https: {
+      judul: 'Kamera butuh alamat HTTPS',
+      isi: 'Browser hanya mengizinkan kamera pada situs HTTPS (atau localhost).',
+      langkah: [
+        showManualHint
+          ? 'Buka situs lewat alamat https://, atau gunakan "Ambil foto QR" / ketik token manual.'
+          : 'Buka situs lewat alamat https://, atau gunakan tombol "Ambil foto QR" di bawah.',
+      ],
+    },
+    galat: {
+      judul: 'Kamera gagal dinyalakan',
+      isi: 'Terjadi kendala saat menyalakan kamera.',
+      langkah: [
+        showManualHint
+          ? 'Tekan "Coba lagi". Bila tetap gagal, gunakan "Ambil foto QR" atau ketik token manual.'
+          : 'Tekan "Coba lagi". Bila tetap gagal, gunakan tombol "Ambil foto QR" di bawah.',
+      ],
+    },
+  };
+}
 
-export default function QRCameraScanner({ onScan, onClose }) {
+export default function QRCameraScanner({ onScan, onClose, showManualHint = true }) {
   // tahap: cek | minta | meminta | mulai | aktif | selesai | <kunci PESAN>
   const [tahap, setTahap] = useState('cek');
   const [cameras, setCameras] = useState([]);
@@ -231,14 +245,19 @@ export default function QRCameraScanner({ onScan, onClose }) {
       setTahap('selesai');
       onScanRef.current(decodedText);
     } catch {
-      setErrorFoto('QR tidak terbaca pada foto. Foto ulang lebih dekat dan pastikan QR tidak buram, atau ketik token manual.');
+      setErrorFoto(
+        showManualHint
+          ? 'QR tidak terbaca pada foto. Foto ulang lebih dekat dan pastikan QR tidak buram, atau ketik token manual.'
+          : 'QR tidak terbaca pada foto. Foto ulang lebih dekat dan pastikan QR tidak buram.',
+      );
     } finally {
       e.target.value = '';
     }
   };
 
   const tampilVideo = tahap === 'mulai' || tahap === 'aktif';
-  const info = PESAN[tahap];
+  const pesanMap = buatPesan(showManualHint);
+  const info = pesanMap[tahap];
   const statusText = {
     cek: 'Memeriksa izin kamera...',
     minta: 'Kamera belum diizinkan',

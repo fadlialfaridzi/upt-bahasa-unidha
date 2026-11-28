@@ -508,9 +508,130 @@ export const updateKehadiranManualToefl = async (req, res) => {
 };
 
 /**
+ * GET /api/toefl/absensi/saya
+ * Mengambil daftar sesi TOEFL milik mahasiswa/peserta yang sedang login (selain dibatalkan)
+ * beserta status pendaftaran, status absensi sesi (sinkron dengan waktu server), dan status kehadiran.
+ * Tidak pernah mengembalikan token_qr kepada peserta.
+ */
+export const getAbsensiToeflSaya = async (req, res) => {
+  try {
+    const idPengguna = parseId(req.user?.id);
+    if (!idPengguna) return res.status(401).json({ message: 'Identitas pengguna tidak valid' });
+
+    const pendaftaran = await prisma.pendaftaran_toefl.findMany({
+      where: {
+        id_pengguna: idPengguna,
+        status: { not: 'dibatalkan' },
+      },
+      select: {
+        id_pendaftaran: true,
+        id_sesi: true,
+        status: true,
+        tanggal_daftar: true,
+        status_kehadiran: true,
+        waktu_presensi: true,
+        sesi_toefl: {
+          select: {
+            id_sesi: true,
+            nama_sesi: true,
+            tanggal: true,
+            jam_mulai: true,
+            jam_selesai: true,
+            ruang: true,
+            status: true,
+            status_presensi: true,
+            waktu_buka_presensi: true,
+            waktu_tutup_presensi: true,
+          },
+        },
+      },
+      orderBy: [{ tanggal_daftar: 'desc' }, { id_pendaftaran: 'desc' }],
+    });
+
+    // Finalisasi otomatis sesi yang waktu_tutup_presensi-nya sudah lewat
+    const sesiPerluCek = new Map();
+    for (const item of pendaftaran) {
+      const s = item.sesi_toefl;
+      if (s && s.status_presensi === 'dibuka' && s.waktu_tutup_presensi && !sesiPerluCek.has(s.id_sesi)) {
+        sesiPerluCek.set(s.id_sesi, s);
+      }
+    }
+
+    const sesiDitutupOtomatis = new Set();
+    await Promise.all(
+      Array.from(sesiPerluCek.values()).map(async (s) => {
+        const ditutup = await finalisasiJikaLewat(s);
+        if (ditutup || (s.waktu_tutup_presensi && new Date(s.waktu_tutup_presensi) <= new Date())) {
+          sesiDitutupOtomatis.add(s.id_sesi);
+        }
+      }),
+    );
+
+    const now = new Date();
+    const waktuServer = now.toISOString();
+
+    const data = pendaftaran.map((item) => {
+      const s = item.sesi_toefl;
+      const statusPresensi = s
+        ? (sesiDitutupOtomatis.has(s.id_sesi) ? 'ditutup' : (s.status_presensi ?? null))
+        : null;
+      const sedangDibuka = Boolean(
+        s
+        && s.status === 'dijadwalkan'
+        && statusPresensi === 'dibuka'
+        && s.waktu_tutup_presensi
+        && new Date(s.waktu_tutup_presensi) > now,
+      );
+      const sisaDetik = sedangDibuka
+        ? Math.max(0, Math.ceil((new Date(s.waktu_tutup_presensi).getTime() - now.getTime()) / 1000))
+        : 0;
+
+      return {
+        id_pendaftaran: item.id_pendaftaran,
+        status_pendaftaran: item.status,
+        tanggal_daftar: item.tanggal_daftar,
+        status_kehadiran: item.status_kehadiran ?? null,
+        waktu_presensi: item.waktu_presensi ?? null,
+        sesi: s ? {
+          id_sesi: s.id_sesi,
+          nama_sesi: s.nama_sesi,
+          tanggal: s.tanggal,
+          jam_mulai: s.jam_mulai,
+          jam_selesai: s.jam_selesai,
+          ruang: s.ruang,
+          status: s.status,
+          status_presensi: statusPresensi,
+          waktu_buka_presensi: s.waktu_buka_presensi ?? null,
+          waktu_tutup_presensi: s.waktu_tutup_presensi ?? null,
+          sedang_dibuka: sedangDibuka,
+          sisa_detik: sisaDetik,
+          waktu_server: waktuServer,
+        } : null,
+      };
+    });
+
+    res.json({
+      message: 'Data absensi TOEFL peserta berhasil diambil',
+      data,
+    });
+  } catch (error) {
+    console.error('[getAbsensiToeflSaya] Internal Error:', error);
+    res.status(500).json({ message: 'Gagal mengambil data absensi TOEFL Anda' });
+  }
+};
+
+const LABEL_STATUS_KEHADIRAN = {
+  hadir: 'hadir',
+  izin: 'izin',
+  sakit: 'sakit',
+  alpha: 'alpa',
+};
+
+/**
  * POST /api/toefl/absensi/scan
  * Body: { token_qr }
- * Peserta yang memindai QR Code valid pada sesi TOEFL aktif otomatis tercatat sebagai 'hadir'.
+ * Peserta terverifikasi yang memindai QR Code valid pada sesi TOEFL aktif otomatis tercatat sebagai 'hadir'.
+ * Hanya mengubah status_kehadiran yang masih NULL; status hadir/izin/sakit/alpha tidak boleh tertimpa.
  */
 export const scanAbsensiToefl = async (req, res) => {
   try {
@@ -527,6 +648,10 @@ export const scanAbsensiToefl = async (req, res) => {
         select: {
           id_sesi: true,
           nama_sesi: true,
+          tanggal: true,
+          jam_mulai: true,
+          jam_selesai: true,
+          ruang: true,
           status: true,
           status_presensi: true,
           waktu_tutup_presensi: true,
@@ -540,13 +665,8 @@ export const scanAbsensiToefl = async (req, res) => {
       }
 
       if (sesi.waktu_tutup_presensi && new Date(sesi.waktu_tutup_presensi) <= now) {
-        await tx.sesi_toefl.updateMany({
-          where: { id_sesi: sesi.id_sesi, status_presensi: 'dibuka', waktu_tutup_presensi: { lte: now } },
-          data: { status_presensi: 'ditutup' },
-        });
-        const err = new Error('Masa berlaku QR Code absensi TOEFL telah berakhir');
-        err.statusCode = 400;
-        throw err;
+        // Kembalikan penanda kedaluwarsa agar auto-close dijalankan di luar transaksi (tidak ikut rollback)
+        return { expired: true, sesi };
       }
 
       const pendaftaran = await tx.pendaftaran_toefl.findFirst({
@@ -570,6 +690,15 @@ export const scanAbsensiToefl = async (req, res) => {
 
       if (pendaftaran.status_kehadiran === 'hadir') {
         const err = new Error('Kehadiran Anda pada sesi TOEFL ini sudah tercatat sebelumnya');
+        err.statusCode = 409;
+        throw err;
+      }
+
+      if (pendaftaran.status_kehadiran !== null && pendaftaran.status_kehadiran !== undefined) {
+        const label = LABEL_STATUS_KEHADIRAN[pendaftaran.status_kehadiran] || pendaftaran.status_kehadiran;
+        const err = new Error(
+          `Status kehadiran Anda pada sesi TOEFL ini sudah tercatat sebagai "${label}" dan tidak dapat diubah melalui scan QR`,
+        );
         err.statusCode = 409;
         throw err;
       }
@@ -599,12 +728,27 @@ export const scanAbsensiToefl = async (req, res) => {
         },
       });
 
-      return { ...updated, nama_sesi: sesi.nama_sesi };
+      return {
+        expired: false,
+        data: {
+          ...updated,
+          nama_sesi: sesi.nama_sesi,
+          tanggal: sesi.tanggal ?? null,
+          jam_mulai: sesi.jam_mulai ?? null,
+          jam_selesai: sesi.jam_selesai ?? null,
+          ruang: sesi.ruang ?? null,
+        },
+      };
     });
+
+    if (hasil?.expired) {
+      await finalisasiJikaLewat(hasil.sesi);
+      return res.status(400).json({ message: 'Masa berlaku QR Code absensi TOEFL telah berakhir' });
+    }
 
     res.json({
       message: 'Presensi TOEFL berhasil dicatat sebagai hadir',
-      data: hasil,
+      data: hasil.data,
     });
   } catch (error) {
     const statusCode = error.statusCode || error.status || 500;

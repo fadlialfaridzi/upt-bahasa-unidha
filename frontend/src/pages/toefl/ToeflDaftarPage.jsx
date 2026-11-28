@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api.js';
 import Icon from '../../components/ui/Icon.jsx';
@@ -602,6 +602,9 @@ function ToeflDaftarPage() {
                 </footer>
               </div>
               <button type="button" className="btn btn-primary btn-block exam-screen-actions" onClick={() => window.print()}><Icon name="download" size={17} /> Unduh Bukti Pendaftaran / Kartu Ujian PDF</button>
+              <Link to="/dashboard/mahasiswa/absensi-toefl" className="btn btn-soft btn-block exam-screen-actions" style={{ textDecoration: 'none' }}>
+                <Icon name="qr" size={17} /> Absensi QR Ujian TOEFL
+              </Link>
               <button type="button" className="btn btn-outline btn-block exam-screen-actions" onClick={() => navigate('/dashboard/mahasiswa/toefl?mode=baru')}>
                 Daftar Ujian Baru
               </button>
